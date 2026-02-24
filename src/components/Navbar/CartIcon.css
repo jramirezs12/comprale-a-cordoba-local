@@ -2,15 +2,15 @@
   position: relative;
   padding: 8px;
   border-radius: var(--radius-sm);
-  color: var(--color-text-dark);
+  color: rgba(255, 255, 255, 0.85);
   transition: background-color 0.2s, color 0.2s;
   display: flex;
   align-items: center;
 }
 
 .cart-icon:hover {
-  background-color: rgba(232, 54, 61, 0.08);
-  color: var(--color-accent);
+  background-color: rgba(255, 255, 255, 0.10);
+  color: var(--color-white);
 }
 
 .cart-icon__badge {

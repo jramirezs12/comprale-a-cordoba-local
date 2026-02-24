@@ -60,7 +60,7 @@ export async function POST(request) {
     let data;
     try {
       data = JSON.parse(text);
-    } catch (e) {
+    } catch {
       console.error('[graphql-proxy] upstream returned non-JSON', { requestId, status: response.status, textPreview: text.slice(0, 300) });
       return Response.json({ message: 'Upstream returned non-JSON', status: response.status }, { status: 502 });
     }
