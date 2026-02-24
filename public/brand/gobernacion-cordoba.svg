@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 56" role="img" aria-label="Gobernación de Córdoba">
+  <!-- Shield icon -->
+  <path d="M10 8 L28 8 L28 32 Q28 44 19 48 Q10 44 10 32 Z" fill="#006847" stroke="#fff" stroke-width="1.5"/>
+  <path d="M13 12 L25 12 L25 31 Q25 41 19 45 Q13 41 13 31 Z" fill="#fff"/>
+  <text x="19" y="32" font-family="'Segoe UI', Arial, sans-serif" font-size="9" font-weight="700" fill="#006847" text-anchor="middle">CBA</text>
+  <!-- Text -->
+  <text x="38" y="26" font-family="'Segoe UI', Arial, sans-serif" font-size="11" font-weight="700" fill="#1a1a2e">Gobernación</text>
+  <text x="38" y="41" font-family="'Segoe UI', Arial, sans-serif" font-size="11" font-weight="700" fill="#006847">de Córdoba</text>
+</svg>

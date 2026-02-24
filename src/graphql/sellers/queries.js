@@ -7,6 +7,13 @@ export const SELLERS_WITH_PRODUCTS = gql`
         products {
           items {
             name
+            sku
+            image { url }
+            price_range {
+              minimum_price {
+                final_price { value currency }
+              }
+            }
           }
         }
         seller {
