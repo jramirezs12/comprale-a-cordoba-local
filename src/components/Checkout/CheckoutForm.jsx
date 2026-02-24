@@ -8,7 +8,6 @@ import { useShippingQuote } from '../../hooks/useShippingQuote';
 import graphqlGuestClient from '../../lib/graphqlGuestClient';
 import {
   CREATE_GUEST_CART,
-  DROPSHIPPING_ADD_PRODUCTS_TO_CART,
   ADD_PRODUCTS_TO_CART,
   SET_GUEST_EMAIL,
   SET_SHIPPING_ADDRESS,
@@ -26,66 +25,85 @@ const DEFAULT_METHOD_CODE = 'inter';
 const DEFAULT_PAYMENT_CODE = 'payzen_standard';
 
 const formatPrice = (price) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price);
+  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price || 0);
 
-const ID_TYPES = ['Cédula de ciudadanía', 'Cédula de extranjería', 'Pasaporte', 'NIT'];
-
-const PAYMENT_METHODS = ['PSE', 'Nequi', 'VISA', 'Mastercard', 'Daviplata'];
+const ID_TYPES = ['C.C', 'C.E', 'Pasaporte', 'NIT'];
+const PAYMENT_METHODS = ['Nequi', 'VISA', 'Mastercard', 'G Pay', 'Pay'];
 
 export default function CheckoutForm() {
   const router = useRouter();
   const { items, total, updateQuantity, clearCart } = useCart();
   const { data: citiesData } = useAllCities();
 
-  const cities = useMemo(
-    () => citiesData?.allCities?.items || [],
-    [citiesData]
-  );
+  const cities = useMemo(() => citiesData?.allCities?.items || [], [citiesData]);
 
   const [form, setForm] = useState({
     fullName: '',
     email: '',
-    idType: 'Cédula de ciudadanía',
+    idType: 'C.C',
     idNumber: '',
     phone: '',
     cityId: '',
     cityName: '',
     address: '',
     department: '',
-    regionId: '',
+    regionId: '', // string but will be cast to Int when sending
     acceptTerms: false,
     acceptData: false,
   });
+
   const [errors, setErrors] = useState({});
   const [processing, setProcessing] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  // Shipping quote – powered by react-query (no manual setState in effects)
+  // Quote inputs
   const totalQty = items.reduce((s, i) => s + i.quantity, 0);
-  const firstProductId = items[0]?.product?.id;
+
+  // IMPORTANT: shippingQuote expects Int productId
+  const firstProductId =
+    items[0]?.product?.productId ??
+    (Number.isFinite(Number(items[0]?.product?.id)) ? Number(items[0]?.product?.id) : null);
+
   const { data: quoteData, isFetching: shippingLoading } = useShippingQuote({
-    destinationCityName: form.cityName || undefined,
+    destinationCityName: form.cityName,
     productId: firstProductId,
     qty: totalQty,
   });
-  const shippingCost = form.cityName && firstProductId ? (quoteData?.shippingQuote?.price ?? null) : null;
+
+  const shippingCost =
+    form.cityName && firstProductId ? (quoteData?.shippingQuote?.price ?? null) : null;
+
   const grandTotal = total + (shippingCost || 0);
+
+  const clearFieldError = (name) => {
+    if (!errors[name]) return;
+    setErrors((prev) => {
+      const n = { ...prev };
+      delete n[name];
+      return n;
+    });
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
     if (name === 'cityId') {
-      const city = cities.find((c) => c.id === value) || null;
+      const city = cities.find((c) => String(c.id) === String(value)) || null;
+
       setForm((f) => ({
         ...f,
         cityId: value,
         cityName: city?.name || '',
         department: city?.region?.name || '',
-        regionId: city?.region?.id || '',
+        regionId: city?.region?.id ? String(city.region.id) : '',
       }));
-    } else {
-      setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+
+      clearFieldError('cityId');
+      return;
     }
-    if (errors[name]) setErrors((prev) => { const n = { ...prev }; delete n[name]; return n; });
+
+    setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+    clearFieldError(name);
   };
 
   const validate = () => {
@@ -96,6 +114,7 @@ export default function CheckoutForm() {
     if (!form.phone.trim()) errs.phone = 'Requerido';
     if (!form.cityId) errs.cityId = 'Selecciona una ciudad';
     if (!form.address.trim()) errs.address = 'Requerido';
+    if (!form.regionId || !Number.isFinite(Number(form.regionId))) errs.cityId = 'Selecciona una ciudad válida';
     if (!form.acceptTerms) errs.acceptTerms = 'Debes aceptar los términos';
     if (!form.acceptData) errs.acceptData = 'Debes autorizar el tratamiento de datos';
     return errs;
@@ -103,72 +122,72 @@ export default function CheckoutForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
+
     setProcessing(true);
     setSubmitError('');
 
-    // Split fullName into firstname / lastname for address fields
     const nameParts = form.fullName.trim().split(/\s+/);
     const firstname = nameParts[0] || form.fullName.trim();
     const lastname = nameParts.slice(1).join(' ') || '';
 
     try {
-      // 1. Create guest cart
+      // 1) Create guest cart
       const cartData = await graphqlGuestClient.request(CREATE_GUEST_CART);
-      const cartId = cartData.createEmptyCart;
+      const cartId = cartData?.createGuestCart?.cart?.id;
 
-      // 2. Add products to cart (prefer dropshipping; fall back to standard)
-      const dropshippingItems = items.map((i) => ({
-        sku: String(i.product.sku || i.product.id),
+      if (!cartId) throw new Error('No se pudo crear el carrito invitado.');
+
+      // 2) Add products to cart (standard)
+      const cartItems = items.map((i) => ({
+        parent_sku: i.product.parent_sku || null,
+        sku: i.product.sku || i.product.id, // sku del simple/hijo
         quantity: i.quantity,
-        dropper_price: i.product.price,
       }));
-      try {
-        await graphqlGuestClient.request(DROPSHIPPING_ADD_PRODUCTS_TO_CART, {
-          cartId,
-          cartItems: dropshippingItems,
-        });
-      } catch {
-        const standardItems = items.map((i) => ({
-          parent_sku: i.product.parent_sku || i.product.sku || String(i.product.id),
-          sku: i.product.sku || String(i.product.id),
-          quantity: i.quantity,
-        }));
-        await graphqlGuestClient.request(ADD_PRODUCTS_TO_CART, { cartId, cartItems: standardItems });
-      }
 
-      // 3. Set guest email
+      const addRes = await graphqlGuestClient.request(ADD_PRODUCTS_TO_CART, { cartId, cartItems });
+      const userErrors = addRes?.addProductsToCart?.user_errors || [];
+      if (userErrors.length) throw new Error(userErrors[0]?.message || 'Error agregando productos al carrito.');
+
+      // 3) Guest email
       await graphqlGuestClient.request(SET_GUEST_EMAIL, { cartId, email: form.email });
 
-      const addressArgs = {
+      const regionIdInt = Number(form.regionId);
+
+      // 4) Shipping address (with region_id)
+      const shippingResult = await graphqlGuestClient.request(SET_SHIPPING_ADDRESS, {
         cartId,
         firstname,
         lastname,
         street: form.address,
         city: form.cityName,
-        region: form.department,
-        postcode: '000000',
+        regionId: regionIdInt,
         telephone: form.phone,
-      };
+      });
 
-      // 4. Set shipping address
-      const shippingResult = await graphqlGuestClient.request(SET_SHIPPING_ADDRESS, addressArgs);
+      // 5) Billing address
+      await graphqlGuestClient.request(SET_BILLING_ADDRESS, {
+        cartId,
+        firstname,
+        lastname,
+        street: form.address,
+        city: form.cityName,
+        regionId: regionIdInt,
+        telephone: form.phone,
+      });
 
-      // 5. Set billing address
-      await graphqlGuestClient.request(SET_BILLING_ADDRESS, addressArgs);
-
-      // 6. Set shipping method
+      // 6) Shipping method (prefer envios/inter)
       const availableMethods =
         shippingResult?.setShippingAddressesOnCart?.cart?.shipping_addresses?.[0]
           ?.available_shipping_methods || [];
+
       const selectedMethod =
-        availableMethods.find(
-          (m) => m.carrier_code === DEFAULT_CARRIER_CODE && m.method_code === DEFAULT_METHOD_CODE
-        ) ||
+        availableMethods.find((m) => m.carrier_code === DEFAULT_CARRIER_CODE && m.method_code === DEFAULT_METHOD_CODE) ||
         availableMethods[0] ||
         { carrier_code: DEFAULT_CARRIER_CODE, method_code: DEFAULT_METHOD_CODE };
 
@@ -178,32 +197,28 @@ export default function CheckoutForm() {
         methodCode: selectedMethod.method_code,
       });
 
-      // 7. Set payment method
-      try {
-        await graphqlGuestClient.request(SET_PAYMENT_METHOD, { cartId, code: DEFAULT_PAYMENT_CODE });
-      } catch {
-        await graphqlGuestClient.request(SET_PAYMENT_METHOD, { cartId, code: 'free' });
-      }
+      // 7) Payment method
+      await graphqlGuestClient.request(SET_PAYMENT_METHOD, { cartId, code: DEFAULT_PAYMENT_CODE });
 
-      // 8. Place order
+      // 8) Place order
       const orderData = await graphqlGuestClient.request(PLACE_ORDER, { cartId });
-      const orderNumber = orderData?.placeOrder?.order?.order_number || '';
+      const placeErrors = orderData?.placeOrder?.errors || [];
+      if (placeErrors.length) throw new Error(placeErrors[0]?.message || 'Error al crear la orden.');
 
-      // 9. Register payment to get redirect URL
-      let paymentUrl = null;
-      if (orderNumber) {
-        try {
-          const paymentData = await graphqlGuestClient.request(REGISTRATE_PAYMENT, {
-            orderId: String(orderNumber),
-          });
-          paymentUrl = paymentData?.registratePayment?.url_payment || null;
-        } catch {
-          // registratePayment may not be available; proceed to confirmation
-        }
-      }
+      const orderId = orderData?.placeOrder?.orderV2?.id;       // <-- ESTE es el que necesita registratePayment
+      const orderNumber = orderData?.placeOrder?.orderV2?.number; // <-- este es para mostrar al usuario
 
-      // 10. Clear cart and redirect
+      if (!orderId) throw new Error('No se recibió el ID de la orden.');
+      if (!orderNumber) throw new Error('No se recibió el número de la orden.');
+
+      // 9) Register payment (must use orderId, NOT orderNumber)
+      const paymentData = await graphqlGuestClient.request(REGISTRATE_PAYMENT, {
+        orderId: String(orderId),
+      });
+      const paymentUrl = paymentData?.registratePayment?.payment?.url_payment || null;
+
       clearCart();
+
       if (paymentUrl) {
         window.location.href = paymentUrl;
       } else {
@@ -211,7 +226,7 @@ export default function CheckoutForm() {
       }
     } catch (err) {
       console.error('Checkout error:', err);
-      setSubmitError('Hubo un error al procesar tu pedido. Por favor intenta de nuevo.');
+      setSubmitError(err?.message || 'Hubo un error al procesar tu pedido. Por favor intenta de nuevo.');
       setProcessing(false);
     }
   };
@@ -222,7 +237,9 @@ export default function CheckoutForm() {
         <Navbar />
         <main className="checkout__empty">
           <p>Tu carrito está vacío.</p>
-          <button className="checkout__back-btn" onClick={() => router.push('/')}>Volver al inicio</button>
+          <button className="checkout__back-btn" onClick={() => router.push('/')}>
+            Volver al inicio
+          </button>
         </main>
       </div>
     );
@@ -237,163 +254,198 @@ export default function CheckoutForm() {
             {submitError}
           </div>
         )}
+
         <form className="checkout__grid" onSubmit={handleSubmit} noValidate>
-
-          {/* Left column: form card */}
+          {/* Left */}
           <section className="checkout__col checkout__col--form" aria-labelledby="form-title">
-            <h2 className="checkout__col-title" id="form-title">Datos de envío</h2>
+            <h2 className="checkout__col-title" id="form-title">
+              Datos de envío
+            </h2>
 
-            {/* 1. Nombre completo */}
             <div className="checkout__field checkout__field--full">
-              <label className="checkout__label" htmlFor="fullName">Nombre completo</label>
               <input
-                id="fullName" name="fullName" type="text"
+                name="fullName"
+                type="text"
                 className={`checkout__input${errors.fullName ? ' checkout__input--error' : ''}`}
-                value={form.fullName} onChange={handleChange}
-                placeholder="Nombre y apellido"
+                value={form.fullName}
+                onChange={handleChange}
+                placeholder="Nombre completo*"
+                aria-label="Nombre completo"
                 autoComplete="name"
               />
-              {errors.fullName && <span className="checkout__error" role="alert">{errors.fullName}</span>}
+              {errors.fullName && <span className="checkout__error">{errors.fullName}</span>}
             </div>
 
-            {/* 2. Correo */}
             <div className="checkout__field checkout__field--full">
-              <label className="checkout__label" htmlFor="email">Correo</label>
               <input
-                id="email" name="email" type="email"
+                name="email"
+                type="email"
                 className={`checkout__input${errors.email ? ' checkout__input--error' : ''}`}
-                value={form.email} onChange={handleChange}
-                placeholder="correo@ejemplo.com"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="Correo"
+                aria-label="Correo"
                 autoComplete="email"
               />
-              {errors.email && <span className="checkout__error" role="alert">{errors.email}</span>}
+              {errors.email && <span className="checkout__error">{errors.email}</span>}
             </div>
 
-            {/* 3. Tipo de ID + Número de ID */}
             <div className="checkout__row">
               <div className="checkout__field">
-                <label className="checkout__label" htmlFor="idType">Tipo de identificación</label>
                 <select
-                  id="idType" name="idType"
+                  name="idType"
                   className="checkout__input checkout__select"
-                  value={form.idType} onChange={handleChange}
+                  value={form.idType}
+                  onChange={handleChange}
+                  aria-label="Tipo de identificación"
                 >
-                  {ID_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {ID_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
                 </select>
               </div>
+
               <div className="checkout__field">
-                <label className="checkout__label" htmlFor="idNumber">Número de identificación</label>
                 <input
-                  id="idNumber" name="idNumber" type="text"
+                  name="idNumber"
+                  type="text"
                   className={`checkout__input${errors.idNumber ? ' checkout__input--error' : ''}`}
-                  value={form.idNumber} onChange={handleChange}
-                  placeholder="Número"
+                  value={form.idNumber}
+                  onChange={handleChange}
+                  placeholder="Número de identificación"
+                  aria-label="Número de identificación"
                 />
-                {errors.idNumber && <span className="checkout__error" role="alert">{errors.idNumber}</span>}
+                {errors.idNumber && <span className="checkout__error">{errors.idNumber}</span>}
               </div>
             </div>
 
-            {/* 4. Teléfono */}
             <div className="checkout__field checkout__field--full">
-              <label className="checkout__label" htmlFor="phone">Teléfono</label>
               <input
-                id="phone" name="phone" type="tel"
+                name="phone"
+                type="tel"
                 className={`checkout__input${errors.phone ? ' checkout__input--error' : ''}`}
-                value={form.phone} onChange={handleChange}
-                placeholder="3001234567"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="Teléfono"
+                aria-label="Teléfono"
                 autoComplete="tel"
               />
-              {errors.phone && <span className="checkout__error" role="alert">{errors.phone}</span>}
+              {errors.phone && <span className="checkout__error">{errors.phone}</span>}
             </div>
 
-            {/* 5. Ciudad */}
             <div className="checkout__field checkout__field--full">
-              <label className="checkout__label" htmlFor="cityId">Ciudad</label>
               <select
-                id="cityId" name="cityId"
+                name="cityId"
                 className={`checkout__input checkout__select${errors.cityId ? ' checkout__input--error' : ''}`}
-                value={form.cityId} onChange={handleChange}
+                value={form.cityId}
+                onChange={handleChange}
+                aria-label="Ciudad"
               >
-                <option value="">Seleccionar ciudad</option>
+                <option value="">Ciudad</option>
                 {cities.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
                 ))}
               </select>
-              {errors.cityId && <span className="checkout__error" role="alert">{errors.cityId}</span>}
+              {errors.cityId && <span className="checkout__error">{errors.cityId}</span>}
             </div>
 
-            {/* 6. Dirección */}
             <div className="checkout__field checkout__field--full">
-              <label className="checkout__label" htmlFor="address">Dirección</label>
               <input
-                id="address" name="address" type="text"
+                name="address"
+                type="text"
                 className={`checkout__input${errors.address ? ' checkout__input--error' : ''}`}
-                value={form.address} onChange={handleChange}
-                placeholder="Calle, Carrera, etc."
+                value={form.address}
+                onChange={handleChange}
+                placeholder="Dirección"
+                aria-label="Dirección"
                 autoComplete="street-address"
               />
-              {errors.address && <span className="checkout__error" role="alert">{errors.address}</span>}
+              {errors.address && <span className="checkout__error">{errors.address}</span>}
             </div>
 
-            {/* 7. Departamento (auto-filled from city) */}
             <div className="checkout__field checkout__field--full">
-              <label className="checkout__label" htmlFor="department">Departamento</label>
               <input
-                id="department" name="department" type="text"
+                name="department"
+                type="text"
                 className="checkout__input checkout__input--readonly"
                 value={form.department}
                 readOnly
-                placeholder="Se completa al seleccionar ciudad"
-                aria-readonly="true"
+                placeholder="Departamento"
+                aria-label="Departamento"
               />
             </div>
 
-            {/* 8. Checkbox: Términos y Condiciones */}
             <label className={`checkout__checkbox${errors.acceptTerms ? ' checkout__checkbox--error' : ''}`}>
               <input type="checkbox" name="acceptTerms" checked={form.acceptTerms} onChange={handleChange} />
-              <span>Aceptar <a href="#" className="checkout__link">Términos y Condiciones</a></span>
+              <span>
+                Aceptar <a href="#" className="checkout__link">Términos y Condiciones</a>
+              </span>
             </label>
-            {errors.acceptTerms && <span className="checkout__error" role="alert">{errors.acceptTerms}</span>}
+            {errors.acceptTerms && <span className="checkout__error">{errors.acceptTerms}</span>}
 
-            {/* 9. Checkbox: Autorizo tratamiento de datos */}
             <label className={`checkout__checkbox${errors.acceptData ? ' checkout__checkbox--error' : ''}`}>
               <input type="checkbox" name="acceptData" checked={form.acceptData} onChange={handleChange} />
               <span>Autorizo el tratamiento de mis datos personales</span>
             </label>
-            {errors.acceptData && <span className="checkout__error" role="alert">{errors.acceptData}</span>}
+            {errors.acceptData && <span className="checkout__error">{errors.acceptData}</span>}
 
-            {/* 10. Divider + "Pago en línea" + payment icons */}
             <hr className="checkout__form-divider" />
             <p className="checkout__payment-label">Pago en línea</p>
             <div className="checkout__payment-logos" aria-label="Métodos de pago aceptados">
               {PAYMENT_METHODS.map((m) => (
-                <span key={m} className="checkout__payment-logo">{m}</span>
+                <span key={m} className="checkout__payment-logo">
+                  {m}
+                </span>
               ))}
             </div>
           </section>
 
-          {/* Right column: order summary */}
+          {/* Right */}
           <section className="checkout__col checkout__col--summary" aria-labelledby="summary-title">
-            <h2 className="checkout__summary-title" id="summary-title">Resumen de compra</h2>
+            <h2 className="checkout__summary-title" id="summary-title">
+              Resumen de compra
+            </h2>
 
             <ul className="checkout__items" aria-label="Artículos en el carrito">
               {items.map(({ product, quantity: qty }) => (
                 <li key={product.id} className="checkout__item">
                   <img className="checkout__item-img" src={product.image} alt={product.name} />
+
                   <div className="checkout__item-info">
                     <p className="checkout__item-name">{product.name}</p>
                     <div className="checkout__item-qty" role="group" aria-label={`Cantidad de ${product.name}`}>
-                      <button type="button" className="checkout__qty-btn" onClick={() => updateQuantity(product.id, qty - 1)} aria-label="Reducir">−</button>
+                      <button
+                        type="button"
+                        className="checkout__qty-btn"
+                        onClick={() => updateQuantity(product.id, qty - 1)}
+                        aria-label="Reducir"
+                      >
+                        −
+                      </button>
                       <span aria-live="polite">{qty}</span>
-                      <button type="button" className="checkout__qty-btn" onClick={() => updateQuantity(product.id, qty + 1)} aria-label="Aumentar">+</button>
+                      <button
+                        type="button"
+                        className="checkout__qty-btn"
+                        onClick={() => updateQuantity(product.id, qty + 1)}
+                        aria-label="Aumentar"
+                      >
+                        +
+                      </button>
                     </div>
                   </div>
+
                   <p className="checkout__item-price">{formatPrice(product.price * qty)}</p>
                 </li>
               ))}
             </ul>
 
-            <a href="/" className="checkout__add-more">+ Agregar más productos</a>
+            <a href="/" className="checkout__add-more">
+              + Agregar más productos
+            </a>
 
             <hr className="checkout__divider" />
 
@@ -408,6 +460,7 @@ export default function CheckoutForm() {
                       : '$0'}
                 </span>
               </div>
+
               <div className="checkout__summary-row">
                 <span>Subtotal</span>
                 <span>{formatPrice(total)}</span>
@@ -421,12 +474,7 @@ export default function CheckoutForm() {
               <span>{formatPrice(grandTotal)}</span>
             </div>
 
-            <button
-              type="submit"
-              className="checkout__pay-btn"
-              disabled={processing}
-              aria-busy={processing}
-            >
+            <button type="submit" className="checkout__pay-btn" disabled={processing} aria-busy={processing}>
               {processing ? 'Procesando…' : 'Pagar'}
             </button>
           </section>

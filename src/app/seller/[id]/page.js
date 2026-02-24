@@ -22,16 +22,19 @@ function SellerDetailContent({ id }) {
   const mockSeller = mockSellers.find((s) => String(s.id) === id);
 
   const apiProducts =
-    !isError && !isLoading && data?.productsBySeller?.items?.length
-      ? data.productsBySeller.items.map((p) => ({
-          id: p.sku,
-          name: p.name,
-          price: p.price_range?.minimum_price?.final_price?.value ?? 0,
-          image: p.image?.url || '',
-          description: p.description?.html?.replace(/<[^>]*>/g, '').trim() || '',
-          stock: typeof p.stock_saleable === 'number' ? p.stock_saleable : null,
-        }))
-      : null;
+  !isError && !isLoading && data?.productsBySeller?.items?.length
+    ? data.productsBySeller.items.map((p) => ({
+        id: p.sku, // route id (sku)
+        sku: p.sku,
+        productId: typeof p.id === 'number' ? p.id : null, // <-- numeric id
+        stock: typeof p.stock_saleable === 'number' ? p.stock_saleable : null,
+
+        name: p.name,
+        price: p.price_range?.minimum_price?.final_price?.value ?? 0,
+        image: p.image?.url || '',
+        description: p.description?.html?.replace(/<[^>]*>/g, '').trim() || '',
+      }))
+    : null;
 
   const seller = mockSeller || { id, name: 'Negocio', image: '', products: [] };
   const products = apiProducts || mockSeller?.products || [];

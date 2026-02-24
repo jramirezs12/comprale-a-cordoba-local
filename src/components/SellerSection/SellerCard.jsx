@@ -15,12 +15,16 @@ function stripHtml(html) {
 
 function mapProductsFromApi(items = [], sellerId) {
   return (items || []).map((p, idx) => ({
-    id: p?.sku || `${sellerId || 'seller'}-${idx}`,
+    id: p?.sku || `${sellerId || 'seller'}-${idx}`, // route/id still sku
+    sku: p?.sku || null,
+    productId: typeof p?.id === 'number' ? p.id : null, // <-- numeric id for shippingQuote
+    stock: typeof p?.stock_saleable === 'number' ? p.stock_saleable : null,
+
     name: p?.name || '',
     price: p?.price_range?.minimum_price?.final_price?.value ?? 0,
     currency: p?.price_range?.minimum_price?.final_price?.currency || 'COP',
     image: p?.image?.url || PRODUCT_PLACEHOLDER,
-    sku: p?.sku || null,
+    description: stripHtml(p?.description?.html),
   }));
 }
 
@@ -34,7 +38,6 @@ function SellerCard({ seller, onViewDetail }) {
   const sellerImage = seller?.image || SELLER_PLACEHOLDER;
   const sellerDescription = stripHtml(seller?.description);
 
-  // Fetch real products (with image/price) per seller
   const qProducts = useProductsBySeller({ sellerId, pageSize: 12, currentPage: 1, enabled: true });
 
   // eslint-disable-next-line react-hooks/preserve-manual-memoization
@@ -42,15 +45,18 @@ function SellerCard({ seller, onViewDetail }) {
     const items = qProducts.data?.productsBySeller?.items;
     if (Array.isArray(items) && items.length) return mapProductsFromApi(items, sellerId);
 
-    // fallback to whatever was passed (might contain only name)
+    // fallback
     const fallback = Array.isArray(seller?.products) ? seller.products : [];
     return fallback.map((p, idx) => ({
       id: p?.id || `${sellerId || 'seller'}-${idx}`,
+      sku: p?.sku || p?.id || null,
+      productId: p?.productId ?? null,
+      stock: p?.stock ?? null,
       name: p?.name || '',
       price: p?.price ?? 0,
       currency: 'COP',
       image: p?.image || PRODUCT_PLACEHOLDER,
-      sku: p?.sku || null,
+      description: p?.description || '',
     }));
   }, [qProducts.data, seller?.products, sellerId]);
 
@@ -64,7 +70,6 @@ function SellerCard({ seller, onViewDetail }) {
 
   return (
     <article className="seller-card" aria-label={`Negocio ${sellerName}`}>
-      {/* Flecha izquierda */}
       <button
         className="seller-card__arrow seller-card__arrow--prev"
         onClick={handlePrev}
@@ -77,7 +82,6 @@ function SellerCard({ seller, onViewDetail }) {
         </svg>
       </button>
 
-      {/* Panel izquierdo: imagen arriba + info abajo */}
       <div className="seller-card__left">
         <div className="seller-card__image-wrap" onClick={handleSellerNav} role="button" tabIndex={0}>
           <img className="seller-card__cover" src={sellerImage} alt={`Portada de ${sellerName}`} loading="lazy" />
@@ -94,7 +98,6 @@ function SellerCard({ seller, onViewDetail }) {
         </div>
       </div>
 
-      {/* Panel derecho: productos */}
       <div className="seller-card__right">
         <ProductScrollList
           products={products}
@@ -106,7 +109,6 @@ function SellerCard({ seller, onViewDetail }) {
         />
       </div>
 
-      {/* Flecha derecha */}
       <button
         className="seller-card__arrow seller-card__arrow--next"
         onClick={handleNext}

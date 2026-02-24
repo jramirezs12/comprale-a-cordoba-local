@@ -40,6 +40,7 @@ export const PRODUCTS_BY_SELLER = gql`
         total_pages
       }
       items {
+        id
         name
         sku
         stock_saleable
@@ -56,9 +57,9 @@ export const PRODUCTS_BY_SELLER = gql`
 `;
 
 export const SHIPPING_QUOTE = gql`
-  query ShippingQuote($destinationCityName: String, $productId: String, $qty: Int) {
+  query ShippingQuote($destinationCityName: String!, $qty: Int!, $productId: Int!) {
     shippingQuote(
-      dataForQuote: { destinationCityName: $destinationCityName, productId: $productId, qty: $qty }
+      dataForQuote: { destinationCityName: $destinationCityName, qty: $qty, productId: $productId }
     ) {
       dateDelivery
       deliveryDays
