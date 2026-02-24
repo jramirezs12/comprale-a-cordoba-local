@@ -29,11 +29,14 @@ export async function POST(request) {
     const body = await request.json();
     const url = env.ALCARRITO_GRAPHQL_URL;
 
+    // If a store is provided by the incoming request, it wins.
+    // Otherwise use env. If neither is set, OMIT the header (staging/tests).
+    const incomingStore = (request.headers.get('store') || request.headers.get('Store') || '').trim();
+    const storeToSend = (incomingStore || env.ALCARRITO_STORE_CODE || '').trim();
+
     const forwardHeaders = {
       'Content-Type': 'application/json',
-
-      // Magento suele usar header `store` en minúscula.
-      ...(env.ALCARRITO_STORE_CODE ? { store: env.ALCARRITO_STORE_CODE } : {}),
+      ...(storeToSend ? { store: storeToSend } : {}),
     };
 
     const authHeader = request.headers.get('Authorization');
@@ -44,7 +47,7 @@ export async function POST(request) {
     console.log('[graphql-proxy] -> upstream', {
       requestId,
       url,
-      store: env.ALCARRITO_STORE_CODE || null,
+      store: storeToSend || null,
       operationName: body?.operationName || null,
       hasVariables: Boolean(body?.variables),
       queryPreview: typeof body?.query === 'string' ? body.query.slice(0, 120) : null,
@@ -61,7 +64,11 @@ export async function POST(request) {
     try {
       data = JSON.parse(text);
     } catch {
-      console.error('[graphql-proxy] upstream returned non-JSON', { requestId, status: response.status, textPreview: text.slice(0, 300) });
+      console.error('[graphql-proxy] upstream returned non-JSON', {
+        requestId,
+        status: response.status,
+        textPreview: text.slice(0, 300),
+      });
       return Response.json({ message: 'Upstream returned non-JSON', status: response.status }, { status: 502 });
     }
 

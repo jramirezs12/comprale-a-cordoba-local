@@ -7,14 +7,21 @@ export const env = {
     readEnv('ALCARRITO_GRAPHQL_URL') ||
     readEnv('NEXT_PUBLIC_ALCARRITO_GRAPHQL_URL') ||
     'https://mcstaging.alcarrito.com/graphql',
+
   ALCARRITO_REST_BASE_URL:
     readEnv('ALCARRITO_REST_BASE_URL') ||
     readEnv('NEXT_PUBLIC_ALCARRITO_REST_BASE_URL') ||
     'https://mcstaging.alcarrito.com/rest/V1',
+
+  /**
+   * IMPORTANT:
+   * Do not default store code. In staging/tests we want requests WITHOUT store header.
+   * In production, set ALCARRITO_STORE_CODE in the environment to enable it.
+   */
   ALCARRITO_STORE_CODE:
     readEnv('ALCARRITO_STORE_CODE') ||
     readEnv('NEXT_PUBLIC_ALCARRITO_STORE_CODE') ||
-    'compraleacordoba',
+    '',
 };
 
 export function graphqlUrl() {
