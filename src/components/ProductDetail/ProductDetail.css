@@ -108,7 +108,7 @@
 
 /* Main image card – white/cream, 8px radius, fixed height */
 .pdp__image-card {
-  background: #f5f5f0;
+  background: #ffffff;
   border-radius: 8px;
   height: 520px;
   display: flex;

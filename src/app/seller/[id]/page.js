@@ -29,6 +29,7 @@ function SellerDetailContent({ id }) {
           price: p.price_range?.minimum_price?.final_price?.value ?? 0,
           image: p.image?.url || '',
           description: p.description?.html?.replace(/<[^>]*>/g, '').trim() || '',
+          stock: typeof p.stock_saleable === 'number' ? p.stock_saleable : null,
         }))
       : null;
 
@@ -105,7 +106,7 @@ function SellerDetailContent({ id }) {
                 <div
                   key={product.id}
                   role="listitem"
-                  style={{ background: '#f5f5f0', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+                  style={{ background: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
                 >
                   <img
                     src={product.image}

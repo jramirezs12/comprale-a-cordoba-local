@@ -1,37 +1,121 @@
-import { use } from 'react';
-import { sellers } from '../../../data/mockData';
+'use client';
+
+import { useEffect, useMemo } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import ClientProviders from '../../../providers/ClientProviders';
 import ProductDetailClient from '../../../components/ProductDetail/ProductDetailClient';
+import Navbar from '../../../components/Navbar/Navbar';
+import Footer from '../../../components/Footer/Footer';
+import { sponsors } from '../../../data/mockData';
+import { useProductsBySeller } from '../../../hooks/useProductsBySeller';
 
-export default function ProductDetailPage({ params, searchParams }) {
-  const { id } = use(params);
-  const resolvedSearch = use(searchParams);
-  const sellerId = resolvedSearch?.seller ? String(resolvedSearch.seller) : null;
+const PRODUCT_PLACEHOLDER = 'https://via.placeholder.com/700x700?text=Producto';
 
-  // Find the product across all sellers
-  let product = null;
-  let resolvedSellerId = sellerId;
+function stripHtml(html) {
+  return (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
 
-  for (const seller of sellers) {
-    const found = seller.products.find((p) => String(p.id) === String(id));
-    if (found) {
-      product = found;
-      if (!resolvedSellerId) resolvedSellerId = String(seller.id);
-      break;
-    }
+function normSku(value) {
+  const s = String(value ?? '');
+  let decoded = s;
+  try {
+    decoded = decodeURIComponent(s);
+  } catch { /* empty */ }
+  return decoded.replace(/\+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+export default function ProductDetailPage() {
+  const params = useParams();
+  const searchParams = useSearchParams();
+
+  const rawId = params?.id;
+  const sellerId = searchParams?.get('seller');
+
+  const { data, isLoading, isError } = useProductsBySeller({
+    sellerId: sellerId ? Number(sellerId) : null,
+    pageSize: 200,
+    currentPage: 1,
+    enabled: Boolean(sellerId),
+  });
+
+  useEffect(() => {
+    if (!data?.productsBySeller?.items) return;
+    console.log('[PDP] rawId:', rawId, 'normId:', normSku(rawId));
+  }, [data, rawId]);
+
+  const product = useMemo(() => {
+    const items = data?.productsBySeller?.items;
+    if (!Array.isArray(items) || !items.length) return null;
+
+    const target = normSku(rawId);
+    const found = items.find((p) => normSku(p?.sku) === target);
+    if (!found) return null;
+
+    const stock = typeof found.stock_saleable === 'number' ? found.stock_saleable : null;
+
+    return {
+      id: found.sku,
+      sku: found.sku,
+      name: found.name || '',
+      image: found.image?.url || PRODUCT_PLACEHOLDER,
+      price: found.price_range?.minimum_price?.final_price?.value ?? 0,
+      description: stripHtml(found.description?.html),
+      gallery: found.image?.url ? [found.image.url] : [],
+      stock, // <-- aquí va el stock_saleable
+    };
+  }, [data, rawId]);
+
+  if (!sellerId) {
+    return (
+      <div style={{ background: '#1d1d1f', minHeight: '100vh' }}>
+        <Navbar />
+        <main style={{ padding: '120px 40px', textAlign: 'center', color: '#efefef' }}>
+          Producto no encontrado (falta sellerId en la URL).
+        </main>
+        <Footer sponsors={sponsors} />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div style={{ background: '#1d1d1f', minHeight: '100vh' }}>
+        <Navbar />
+        <main style={{ padding: '120px 40px', textAlign: 'center', color: '#efefef' }}>
+          Cargando...
+        </main>
+        <Footer sponsors={sponsors} />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div style={{ background: '#1d1d1f', minHeight: '100vh' }}>
+        <Navbar />
+        <main style={{ padding: '120px 40px', textAlign: 'center', color: '#efefef' }}>
+          Error cargando el producto.
+        </main>
+        <Footer sponsors={sponsors} />
+      </div>
+    );
   }
 
   if (!product) {
     return (
-      <div style={{ padding: '120px 40px', textAlign: 'center', fontFamily: 'inherit' }}>
-        Producto no encontrado.
+      <div style={{ background: '#1d1d1f', minHeight: '100vh' }}>
+        <Navbar />
+        <main style={{ padding: '120px 40px', textAlign: 'center', color: '#efefef' }}>
+          Producto no encontrado.
+        </main>
+        <Footer sponsors={sponsors} />
       </div>
     );
   }
 
   return (
     <ClientProviders>
-      <ProductDetailClient product={product} sellerId={resolvedSellerId} />
+      <ProductDetailClient product={product} sellerId={String(sellerId)} />
     </ClientProviders>
   );
 }

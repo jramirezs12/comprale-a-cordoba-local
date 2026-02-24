@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
@@ -10,55 +10,77 @@ import ProductItem from '../SellerSection/ProductItem';
 import './ProductDetail.css';
 
 const formatPrice = (price) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price);
+  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price || 0);
+
+function clampQty(qty, stock) {
+  if (typeof stock !== 'number') return Math.max(1, qty);
+  if (stock <= 0) return 1;
+  return Math.min(Math.max(1, qty), stock);
+}
 
 export default function ProductDetailClient({ product, sellerId }) {
   const gallery = product.gallery?.length ? product.gallery : [product.image];
   const [activeImg, setActiveImg] = useState(0);
-  const [quantity, setQuantity] = useState(1);
+
+  const stock = typeof product.stock === 'number' ? product.stock : null;
+  const isOutOfStock = stock === 0;
+
+  const [quantity, setQuantity] = useState(() => clampQty(1, stock));
+
+  // If stock arrives/changes, clamp qty
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setQuantity((q) => clampQty(q, stock));
+  }, [stock]);
+
   const router = useRouter();
   const { addItem } = useCart();
 
   const mockSeller = sellerId ? mockSellers.find((s) => String(s.id) === String(sellerId)) : null;
   const sellerName = mockSeller?.name || '';
 
-  // Collect similar products from all sellers (excluding current product), max 6
-  const similarItems = [];
-  outer: for (const seller of mockSellers) {
-    for (const p of seller.products) {
-      if (similarItems.length >= 6) break outer;
-      if (String(p.id) !== String(product.id)) {
-        similarItems.push({ product: p, sellerId: String(seller.id), sellerName: seller.name });
+  // Similar items (por ahora mock; luego se puede cambiar a API)
+  const similarItems = useMemo(() => {
+    const items = [];
+    outer: for (const seller of mockSellers) {
+      for (const p of seller.products) {
+        if (items.length >= 6) break outer;
+        if (String(p.id) !== String(product.id)) {
+          items.push({ product: p, sellerId: String(seller.id), sellerName: seller.name });
+        }
       }
     }
-  }
+    return items;
+  }, [product.id]);
 
   const handleBuyNow = () => {
-    addItem(product, sellerId, quantity, sellerName);
+    if (typeof stock === 'number' && stock <= 0) return;
+    const safeQty = clampQty(quantity, stock);
+    addItem(product, sellerId, safeQty, sellerName);
     router.push('/checkout');
   };
 
   const handleSelectMore = () => {
-    addItem(product, sellerId, quantity, sellerName);
+    if (typeof stock === 'number' && stock <= 0) return;
+    const safeQty = clampQty(quantity, stock);
+    addItem(product, sellerId, safeQty, sellerName);
     router.push('/');
   };
+
+  const decDisabled = quantity <= 1;
+  const incDisabled = typeof stock === 'number' ? quantity >= stock : false;
 
   return (
     <div className="pdp" style={{ background: '#1d1d1f', minHeight: '100vh' }}>
       <Navbar />
       <main className="pdp__main">
         <div className="pdp__container">
-
-          {/* Title + Price row */}
           <div className="pdp__title-row">
             <h1 className="pdp__title">{product.name}</h1>
             <span className="pdp__price-display">{formatPrice(product.price)}</span>
           </div>
 
-          {/* Main content: image panel + info panel */}
           <div className="pdp__content-row">
-
-            {/* Left: image with thumbnail overlay */}
             <div className="pdp__image-section">
               {gallery.length > 1 && (
                 <div className="pdp__thumbnails" role="group" aria-label="Galería de imágenes del producto">
@@ -77,51 +99,44 @@ export default function ProductDetailClient({ product, sellerId }) {
                 </div>
               )}
               <div className="pdp__image-card">
-                <img
-                  className="pdp__main-image"
-                  src={gallery[activeImg]}
-                  alt={product.name}
-                />
+                <img className="pdp__main-image" src={gallery[activeImg]} alt={product.name} />
               </div>
             </div>
 
-            {/* Right: info panel */}
             <div className="pdp__info-panel">
-
-              {/* Description */}
               <div className="pdp__desc-section">
                 <p className="pdp__desc-label">Descripción</p>
-                <p className="pdp__desc-text">
-                  {product.description || 'Sin descripción disponible.'}
-                </p>
+                <p className="pdp__desc-text">{product.description || 'Sin descripción disponible.'}</p>
               </div>
 
-              {/* Stock */}
               <div className="pdp__stock-row">
                 <span className="pdp__stock-label">Unidades disponibles</span>
                 <span className="pdp__stock-value">
-                  {product.stock != null ? product.stock : '—'}
+                  {stock != null ? stock : '—'}
                 </span>
               </div>
 
-              {/* Quantity */}
               <div className="pdp__qty-row">
                 <span className="pdp__qty-label">Cantidad</span>
                 <div className="pdp__qty-ctrl" role="group" aria-label="Control de cantidad">
                   <button
                     className="pdp__qty-btn"
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    onClick={() => setQuantity((q) => clampQty(q - 1, stock))}
                     aria-label="Reducir cantidad"
                     type="button"
+                    disabled={decDisabled || isOutOfStock}
                   >
                     −
                   </button>
-                  <span className="pdp__qty-num" aria-live="polite">{quantity}</span>
+                  <span className="pdp__qty-num" aria-live="polite">
+                    {quantity}
+                  </span>
                   <button
                     className="pdp__qty-btn"
-                    onClick={() => setQuantity((q) => q + 1)}
+                    onClick={() => setQuantity((q) => clampQty(q + 1, stock))}
                     aria-label="Aumentar cantidad"
                     type="button"
+                    disabled={incDisabled || isOutOfStock}
                   >
                     +
                   </button>
@@ -130,28 +145,36 @@ export default function ProductDetailClient({ product, sellerId }) {
 
               <hr className="pdp__divider" />
 
-              {/* Action buttons */}
               <button
                 className="pdp__btn pdp__btn--comprar"
                 onClick={handleBuyNow}
                 aria-label={`Comprar ${product.name}`}
                 type="button"
+                disabled={isOutOfStock}
+                style={isOutOfStock ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
               >
                 Comprar
               </button>
+
               <button
                 className="pdp__btn pdp__btn--mas"
                 onClick={handleSelectMore}
                 aria-label="Agregar al carrito y seleccionar más productos"
                 type="button"
+                disabled={isOutOfStock}
+                style={isOutOfStock ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
               >
                 Seleccionar más productos
               </button>
 
+              {isOutOfStock && (
+                <p style={{ marginTop: 10, color: '#efefef', opacity: 0.8, fontSize: 13 }}>
+                  Producto sin stock disponible.
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Similar items */}
           {similarItems.length > 0 && (
             <section className="pdp__similar" aria-label="Artículos similares">
               <h2 className="pdp__similar-title">Artículos similares</h2>
@@ -162,11 +185,9 @@ export default function ProductDetailClient({ product, sellerId }) {
               </div>
             </section>
           )}
-
         </div>
       </main>
       <Footer sponsors={sponsors} />
     </div>
   );
 }
-

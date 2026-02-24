@@ -42,15 +42,12 @@ export const PRODUCTS_BY_SELLER = gql`
       items {
         name
         sku
-        image {
-          url
-        }
+        stock_saleable
+        image { url }
+        description { html }
         price_range {
           minimum_price {
-            final_price {
-              value
-              currency
-            }
+            final_price { value currency }
           }
         }
       }
