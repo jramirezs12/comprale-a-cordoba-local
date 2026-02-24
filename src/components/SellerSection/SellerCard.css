@@ -123,6 +123,7 @@
   background: transparent;
   border-left: 1px solid rgba(255, 255, 255, 0.1);
   min-width: 0;
+  overflow: hidden;
 }
 
 .seller-card__arrow {
@@ -157,7 +158,7 @@
 }
 
 /* ── Responsive ── */
-@media (max-width: 900px) {
+@media (max-width: 980px) {
   .seller-card-wrap {
     gap: 8px;
   }

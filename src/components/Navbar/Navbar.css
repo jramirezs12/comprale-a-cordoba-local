@@ -4,20 +4,20 @@
   top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  width: calc(100% - 48px);
-  max-width: 1200px;
+  width: calc(100% - 32px);
+  max-width: 1600px;
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 10px 20px;
-  background: rgba(245, 245, 238, 0.78);
+  padding: 10px 24px;
+  background: rgba(33, 36, 39, 0.85);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(224, 224, 208, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10), 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.30), 0 1px 4px rgba(0, 0, 0, 0.20);
 }
 
 /* ── Logo ── */
@@ -50,8 +50,8 @@
   max-width: 520px;
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1.5px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.10);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
   border-radius: 50px;
   overflow: hidden;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -77,17 +77,17 @@
   outline: none;
   font-size: 0.88rem;
   background: transparent;
-  color: var(--color-text-dark);
+  color: rgba(255, 255, 255, 0.90);
   font-family: inherit;
 }
 
 .navbar__search-input::placeholder {
-  color: var(--color-text-light);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .navbar__icon-btn {
   padding: 8px 12px;
-  color: var(--color-accent);
+  color: rgba(255, 255, 255, 0.70);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -100,7 +100,7 @@
 }
 
 .navbar__icon-btn:hover {
-  color: var(--color-accent-dark);
+  color: var(--color-white);
 }
 
 .navbar__icon-btn:focus-visible {
@@ -112,7 +112,7 @@
 .navbar__divider {
   width: 1px;
   height: 24px;
-  background: var(--color-border);
+  background: rgba(255, 255, 255, 0.18);
   flex-shrink: 0;
 }
 
@@ -128,7 +128,7 @@
 @media (max-width: 768px) {
   .navbar {
     top: 10px;
-    width: calc(100% - 24px);
+    width: calc(100% - 20px);
     padding: 8px 14px;
     flex-wrap: wrap;
     gap: 10px;
@@ -151,8 +151,8 @@
   .navbar__segment {
     width: 100%;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.72);
-    border: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.15);
   }
 
   .navbar__divider {
