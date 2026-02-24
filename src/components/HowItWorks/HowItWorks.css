@@ -1,0 +1,103 @@
+.how-it-works {
+  padding: 56px 32px 48px 32px;
+  background-color: var(--color-bg);
+  text-align: center;
+}
+
+.how-it-works__title {
+  font-family: 'PP Neue Montreal', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-weight: 450;
+  font-size: 42px;
+  color: #ffffff;
+  margin-bottom: 32px;
+  margin-top: 0;
+  letter-spacing: -0.02em;
+}
+
+.how-it-works__title::after {
+  content: none;
+}
+
+.how-it-works__steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0px 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+  text-align: left;
+  align-items: start;
+}
+
+.how-it-works__step {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+/* PP Neue Montreal Book (400) — número grande, ocupa las 2 líneas */
+.how-it-works__step-number {
+  font-family: 'PP Neue Montreal', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-weight: 400;
+  font-size: 42px;
+  color: #ffffff;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  /* Alineación visual: bajar ligeramente para coincidir con la línea base del texto */
+  margin-top: -4px;
+}
+
+.how-it-works__step-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+/* PP Neue Montreal Medium (500) — texto, exactamente 2 líneas */
+.how-it-works__step-line {
+  font-family: 'PP Neue Montreal', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.4;
+  margin: 0;
+  white-space: normal;
+  min-width: 0;
+}
+
+/* Responsive */
+@media (max-width: 980px) {
+  .how-it-works__steps {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px 28px;
+    max-width: 780px;
+  }
+}
+
+@media (max-width: 575px) {
+  .how-it-works {
+    padding: 40px 16px 32px 16px;
+  }
+
+  .how-it-works__title {
+    font-size: 32px;
+    margin-bottom: 24px;
+  }
+
+  .how-it-works__steps {
+    grid-template-columns: 1fr;
+    gap: 16px 0px;
+    max-width: 98vw;
+  }
+
+  .how-it-works__step-number {
+    font-size: 32px;
+    margin-top: -2px;
+  }
+
+  .how-it-works__step-line {
+    font-size: 14px;
+  }
+}

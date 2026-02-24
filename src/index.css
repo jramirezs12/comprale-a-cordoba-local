@@ -1,0 +1,52 @@
+:root {
+  --color-primary: #fbfbed;
+  --color-primary-hover: #f0eedd;
+  --color-accent: #e8363d;
+  --color-accent-dark: #c42b31;
+  --color-text-dark: #1a1a2e;
+  --color-text-medium: #4a4a6a;
+  --color-text-light: #888;
+  --color-white: #ffffff;
+  --color-border: #e0e0d0;
+  --color-card-bg: #ffffff;
+  --color-bg: #1d1d1f;
+  --color-seller-card-bg: #0a0a0a;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-primary);
+  color: var(--color-text-dark);
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
