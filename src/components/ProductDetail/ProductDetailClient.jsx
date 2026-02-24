@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
 import { useCart } from '../../context/CartContext';
-import { sellers as mockSellers, sponsors } from '../../data/mockData';
+import { sponsors } from '../../data/mockData';
 import ProductItem from '../SellerSection/ProductItem';
+import { useSimilarProducts } from '../../hooks/useSimilarProducts';
 import './ProductDetail.css';
 
 const formatPrice = (price) =>
@@ -36,22 +37,34 @@ export default function ProductDetailClient({ product, sellerId }) {
   const router = useRouter();
   const { addItem } = useCart();
 
-  const mockSeller = sellerId ? mockSellers.find((s) => String(s.id) === String(sellerId)) : null;
-  const sellerName = mockSeller?.name || '';
+  const sellerName = '';
 
-  // Similar items (por ahora mock; luego se puede cambiar a API)
-  const similarItems = useMemo(() => {
-    const items = [];
-    outer: for (const seller of mockSellers) {
-      for (const p of seller.products) {
-        if (items.length >= 6) break outer;
-        if (String(p.id) !== String(product.id)) {
-          items.push({ product: p, sellerId: String(seller.id), sellerName: seller.name });
-        }
+  // Similar items from real API with infinite scroll
+  const {
+    data: similarData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetching: similarLoading,
+  } = useSimilarProducts({ excludeProductId: product.id });
+
+  const similarItems = useMemo(() => similarData?.products || [], [similarData]);
+
+  // Horizontal scroll ref for load-more on scroll
+  const similarScrollRef = useRef(null);
+
+  useEffect(() => {
+    const el = similarScrollRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      if (!hasNextPage || isFetchingNextPage) return;
+      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 100) {
+        fetchNextPage();
       }
-    }
-    return items;
-  }, [product.id]);
+    };
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleBuyNow = () => {
     if (typeof stock === 'number' && stock <= 0) return;
@@ -175,14 +188,37 @@ export default function ProductDetailClient({ product, sellerId }) {
             </div>
           </div>
 
-          {similarItems.length > 0 && (
+          {(similarItems.length > 0 || similarLoading) && (
             <section className="pdp__similar" aria-label="Artículos similares">
               <h2 className="pdp__similar-title">Artículos similares</h2>
-              <div className="pdp__similar-grid" role="list" aria-label="Productos similares">
-                {similarItems.map(({ product: p, sellerId: sid, sellerName: sname }) => (
-                  <ProductItem key={`${sid}-${p.id}`} product={p} sellerId={sid} sellerName={sname} />
+              <div
+                className="pdp__similar-scroll"
+                ref={similarScrollRef}
+                role="list"
+                aria-label="Productos similares"
+              >
+                {similarItems.map(({ id, sku, name, price, image, sellerId: sid, sellerName: sname }) => (
+                  <ProductItem
+                    key={`${sid}-${id}`}
+                    product={{ id, sku, name, price, image }}
+                    sellerId={sid}
+                    sellerName={sname}
+                  />
                 ))}
+                {(similarLoading || isFetchingNextPage) &&
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <div key={`skel-${i}`} className="product-item product-item--skeleton" aria-hidden="true" />
+                  ))}
               </div>
+              {hasNextPage && !isFetchingNextPage && (
+                <button
+                  className="pdp__similar-more"
+                  onClick={() => fetchNextPage()}
+                  type="button"
+                >
+                  Ver más
+                </button>
+              )}
             </section>
           )}
         </div>

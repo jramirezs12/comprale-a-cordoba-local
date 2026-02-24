@@ -12,7 +12,17 @@ import { useProductsBySeller } from '../../../hooks/useProductsBySeller';
 const PRODUCT_PLACEHOLDER = 'https://via.placeholder.com/700x700?text=Producto';
 
 function stripHtml(html) {
-  return (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!html) return '';
+  // Remove <style> blocks (PageBuilder CSS fragments)
+  let text = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ');
+  // Remove HTML tags
+  text = text.replace(/<[^>]*>/g, ' ');
+  // Remove PageBuilder CSS noise: #html-body [data-pb-style=XXXXX]{property:value}
+  text = text.replace(/#[a-zA-Z][\w-]*\s*\[[^\]]*\][^{]*\{[^}]*\}/g, ' ');
+  // Remove stray CSS rule blocks: selector{property:value}
+  text = text.replace(/[a-zA-Z#.[\]"=\-_]+\s*\{[^}]*\}/g, ' ');
+  // Collapse whitespace
+  return text.replace(/\s+/g, ' ').trim();
 }
 
 function normSku(value) {

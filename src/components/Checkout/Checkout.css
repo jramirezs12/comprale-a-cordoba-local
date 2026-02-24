@@ -57,7 +57,7 @@
 /* ===== Two-column grid ===== */
 .checkout__grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 
   /* IMPORTANT: no gap, cards should touch */
   gap: 0;

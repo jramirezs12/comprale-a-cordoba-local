@@ -312,8 +312,7 @@ export const stats = {
 };
 
 export const sponsors = [
-  { id: 1, name: 'Inter Rapidísimo', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Inter_Rapidisimo_logo.svg/320px-Inter_Rapidisimo_logo.svg.png' },
-  { id: 2, name: 'Gobernación de Córdoba', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Escudo_de_C%C3%B3rdoba_%28Colombia%29.svg/200px-Escudo_de_C%C3%B3rdoba_%28Colombia%29.svg.png' },
-  { id: 3, name: 'Alcaldía de Montería', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Escudo_de_C%C3%B3rdoba_%28Colombia%29.svg/200px-Escudo_de_C%C3%B3rdoba_%28Colombia%29.svg.png' },
-  { id: 4, name: 'Cámara de Comercio', logo: 'https://via.placeholder.com/160x60?text=Cámara+de+Comercio' },
+  { id: 2, name: 'Gobernación de Córdoba', logo: '/brand/gobernacion-cordoba.svg' },
+  { id: 3, name: 'Alcaldía de Montería', logo: '/brand/alcaldia-monteria.svg' },
+  { id: 4, name: 'Cámara de Comercio de Montería', logo: '/brand/camara-comercio.svg' },
 ];
