@@ -5,32 +5,42 @@ import { useRouter } from 'next/navigation';
 import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
 import { useCart } from '../../context/CartContext';
-import { useShippingQuote } from '../../hooks/useShippingQuote';
 import { sellers as mockSellers, sponsors } from '../../data/mockData';
+import ProductItem from '../SellerSection/ProductItem';
 import './ProductDetail.css';
 
 const formatPrice = (price) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price);
 
 export default function ProductDetailClient({ product, sellerId }) {
+  const gallery = product.gallery?.length ? product.gallery : [product.image];
+  const [activeImg, setActiveImg] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const router = useRouter();
   const { addItem } = useCart();
 
-  const { data: shippingData } = useShippingQuote({ productId: product.id });
-  const shippingInfo = shippingData?.shippingQuote;
-
   const mockSeller = sellerId ? mockSellers.find((s) => String(s.id) === String(sellerId)) : null;
   const sellerName = mockSeller?.name || '';
-  const sellerImage = mockSeller?.image || '';
 
-  const handleAddToCart = () => {
-    addItem(product, sellerId, quantity, sellerName);
-  };
+  // Collect similar products from all sellers (excluding current product), max 6
+  const similarItems = [];
+  outer: for (const seller of mockSellers) {
+    for (const p of seller.products) {
+      if (similarItems.length >= 6) break outer;
+      if (String(p.id) !== String(product.id)) {
+        similarItems.push({ product: p, sellerId: String(seller.id), sellerName: seller.name });
+      }
+    }
+  }
 
   const handleBuyNow = () => {
     addItem(product, sellerId, quantity, sellerName);
     router.push('/checkout');
+  };
+
+  const handleSelectMore = () => {
+    addItem(product, sellerId, quantity, sellerName);
+    router.push('/');
   };
 
   return (
@@ -38,113 +48,125 @@ export default function ProductDetailClient({ product, sellerId }) {
       <Navbar />
       <main className="pdp__main">
         <div className="pdp__container">
-          <button className="pdp__back" onClick={() => router.back()} aria-label="Volver">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Volver
-          </button>
 
-          <div className="pdp__layout">
-            {/* Left: Image */}
-            <div className="pdp__image-wrap">
-              <img
-                className="pdp__image"
-                src={product.image}
-                alt={product.name}
-              />
-            </div>
+          {/* Title + Price row */}
+          <div className="pdp__title-row">
+            <h1 className="pdp__title">{product.name}</h1>
+            <span className="pdp__price-display">{formatPrice(product.price)}</span>
+          </div>
 
-            {/* Right: Info */}
-            <div className="pdp__info" style={{ background: '#0a0a0a', borderRadius: '16px', padding: '32px' }}>
-              {/* Seller chip */}
-              {sellerId && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                  {sellerImage && (
-                    <img
-                      src={sellerImage}
-                      alt={sellerName}
-                      style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }}
-                    />
-                  )}
-                  <div>
-                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', margin: 0 }}>Vendido por</p>
-                    <p style={{ color: '#ffffff', fontWeight: 600, margin: 0 }}>{sellerName || `Vendedor #${sellerId}`}</p>
-                  </div>
-                  <a
-                    href={`/seller/${sellerId}`}
-                    style={{ marginLeft: 'auto', color: '#fbfbed', fontSize: '0.875rem', textDecoration: 'none' }}
-                  >
-                    Ver tienda →
-                  </a>
+          {/* Main content: image panel + info panel */}
+          <div className="pdp__content-row">
+
+            {/* Left: image with thumbnail overlay */}
+            <div className="pdp__image-section">
+              {gallery.length > 1 && (
+                <div className="pdp__thumbnails" role="group" aria-label="Galería de imágenes del producto">
+                  {gallery.map((src, i) => (
+                    <button
+                      key={i}
+                      className={`pdp__thumb-btn${activeImg === i ? ' pdp__thumb-btn--active' : ''}`}
+                      onClick={() => setActiveImg(i)}
+                      aria-label={`Ver imagen ${i + 1} de ${gallery.length}`}
+                      aria-pressed={activeImg === i}
+                      type="button"
+                    >
+                      <img src={src} alt="" className="pdp__thumb-img" aria-hidden="true" />
+                    </button>
+                  ))}
                 </div>
               )}
+              <div className="pdp__image-card">
+                <img
+                  className="pdp__main-image"
+                  src={gallery[activeImg]}
+                  alt={product.name}
+                />
+              </div>
+            </div>
 
-              <h1 className="pdp__name" style={{ color: '#ffffff' }}>{product.name}</h1>
-              <p className="pdp__price" style={{ color: '#ffffff' }}>{formatPrice(product.price)}</p>
+            {/* Right: info panel */}
+            <div className="pdp__info-panel">
 
-              <hr className="pdp__divider" style={{ borderColor: 'rgba(255,255,255,0.1)' }} />
+              {/* Description */}
+              <div className="pdp__desc-section">
+                <p className="pdp__desc-label">Descripción</p>
+                <p className="pdp__desc-text">
+                  {product.description || 'Sin descripción disponible.'}
+                </p>
+              </div>
 
-              {product.description && (
-                <p className="pdp__description" style={{ color: 'rgba(255,255,255,0.7)' }}>{product.description}</p>
-              )}
+              {/* Stock */}
+              <div className="pdp__stock-row">
+                <span className="pdp__stock-label">Unidades disponibles</span>
+                <span className="pdp__stock-value">
+                  {product.stock != null ? product.stock : '—'}
+                </span>
+              </div>
 
               {/* Quantity */}
               <div className="pdp__qty-row">
-                <span className="pdp__qty-label" style={{ color: 'rgba(255,255,255,0.7)' }}>Cantidad</span>
+                <span className="pdp__qty-label">Cantidad</span>
                 <div className="pdp__qty-ctrl" role="group" aria-label="Control de cantidad">
                   <button
                     className="pdp__qty-btn"
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                     aria-label="Reducir cantidad"
+                    type="button"
                   >
                     −
                   </button>
-                  <span className="pdp__qty-num" aria-live="polite" style={{ color: '#ffffff' }}>{quantity}</span>
+                  <span className="pdp__qty-num" aria-live="polite">{quantity}</span>
                   <button
                     className="pdp__qty-btn"
                     onClick={() => setQuantity((q) => q + 1)}
                     aria-label="Aumentar cantidad"
+                    type="button"
                   >
                     +
                   </button>
                 </div>
               </div>
 
-              {/* Actions */}
+              <hr className="pdp__divider" />
+
+              {/* Action buttons */}
               <button
-                className="pdp__btn pdp__btn--primary"
-                onClick={handleAddToCart}
-                style={{ background: '#1d1d1f', color: '#ffffff', border: '1px solid rgba(255,255,255,0.2)' }}
+                className="pdp__btn pdp__btn--comprar"
+                onClick={handleBuyNow}
+                aria-label={`Comprar ${product.name}`}
+                type="button"
               >
-                Agregar al carrito
+                Comprar
               </button>
               <button
-                className="pdp__btn pdp__btn--secondary"
-                onClick={handleBuyNow}
-                style={{ background: '#fbfbed', color: '#1a1a2e' }}
+                className="pdp__btn pdp__btn--mas"
+                onClick={handleSelectMore}
+                aria-label="Agregar al carrito y seleccionar más productos"
+                type="button"
               >
-                Comprar ahora
+                Seleccionar más productos
               </button>
 
-              {/* Shipping info */}
-              <div className="pdp__shipping" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <rect x="1" y="3" width="15" height="13" rx="1" />
-                  <path d="M16 8h4l3 3v5h-7V8z" />
-                  <circle cx="5.5" cy="18.5" r="2.5" />
-                  <circle cx="18.5" cy="18.5" r="2.5" />
-                </svg>
-                <span>
-                  Envío gratis con Inter Rapidísimo
-                  {shippingInfo?.deliveryDays ? ` · Entrega en ${shippingInfo.deliveryDays} días` : ''}
-                </span>
-              </div>
             </div>
           </div>
+
+          {/* Similar items */}
+          {similarItems.length > 0 && (
+            <section className="pdp__similar" aria-label="Artículos similares">
+              <h2 className="pdp__similar-title">Artículos similares</h2>
+              <div className="pdp__similar-grid" role="list" aria-label="Productos similares">
+                {similarItems.map(({ product: p, sellerId: sid, sellerName: sname }) => (
+                  <ProductItem key={`${sid}-${p.id}`} product={p} sellerId={sid} sellerName={sname} />
+                ))}
+              </div>
+            </section>
+          )}
+
         </div>
       </main>
       <Footer sponsors={sponsors} />
     </div>
   );
 }
+
