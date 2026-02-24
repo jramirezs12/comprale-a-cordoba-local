@@ -24,9 +24,10 @@ export default function ProductDetailClient({ product, sellerId }) {
 
   // Collect similar products from all sellers (excluding current product), max 6
   const similarItems = [];
-  for (const seller of mockSellers) {
+  outer: for (const seller of mockSellers) {
     for (const p of seller.products) {
-      if (String(p.id) !== String(product.id) && similarItems.length < 6) {
+      if (similarItems.length >= 6) break outer;
+      if (String(p.id) !== String(product.id)) {
         similarItems.push({ product: p, sellerId: String(seller.id), sellerName: seller.name });
       }
     }
@@ -156,7 +157,7 @@ export default function ProductDetailClient({ product, sellerId }) {
               <h2 className="pdp__similar-title">Artículos similares</h2>
               <div className="pdp__similar-grid" role="list" aria-label="Productos similares">
                 {similarItems.map(({ product: p, sellerId: sid, sellerName: sname }) => (
-                  <ProductItem key={p.id} product={p} sellerId={sid} sellerName={sname} />
+                  <ProductItem key={`${sid}-${p.id}`} product={p} sellerId={sid} sellerName={sname} />
                 ))}
               </div>
             </section>
