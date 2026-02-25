@@ -15,6 +15,7 @@ export default function CartDrawer({ open, onClose }) {
 
   // ✅ same portal approach as CategoryDrawer
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
   const portalTarget = mounted ? document.body : null;
 

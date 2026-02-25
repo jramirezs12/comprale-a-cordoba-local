@@ -46,14 +46,36 @@ function Hero({ nextSectionRef }) {
         </h1>
 
         <p className="hero__subtitle">
-          Un marketplace hecho para ayudarle a los emprendedores de Córdoba a reempezar.
+          Un marketplace hecho para ayudarle a los
+          <br />
+          emprendedores de Córdoba a reempezar.
         </p>
 
         <div className="hero__arrows" aria-hidden="true">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            className="hero__arrow"
+            width="30"
+            height="30"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="6 9 12 15 18 9" />
           </svg>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            className="hero__arrow hero__arrow--second"
+            width="30"
+            height="30"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="6 9 12 15 18 9" />
           </svg>
         </div>

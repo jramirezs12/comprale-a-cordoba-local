@@ -58,7 +58,7 @@
 }
 
 .product-item__name {
-  font-family: 'PP Neue Montreal', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   font-size: 0.92rem;
   font-weight: 500;
   color: var(--color-text-dark);
@@ -72,7 +72,7 @@
 }
 
 .product-item__price {
-  font-family: 'PP Neue Montreal', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   font-size: 0.92rem;
   font-weight: 600;
   color: var(--color-text-dark);

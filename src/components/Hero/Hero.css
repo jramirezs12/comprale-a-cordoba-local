@@ -20,15 +20,10 @@
   z-index: 0;
 }
 
-/* Subtle dark gradient for legibility */
 .hero__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(10, 10, 30, 0.20) 0%,
-    rgba(10, 10, 30, 0.55) 100%
-  );
+  background: linear-gradient(to bottom, rgba(10, 10, 30, 0.2) 0%, rgba(10, 10, 30, 0.55) 100%);
   z-index: 1;
 }
 
@@ -42,18 +37,23 @@
 }
 
 .hero__title {
-  font-family: var(--font-sans); /* PP Neue Montreal */
+  font-family: var(--font-sans);
   font-weight: 100;
-  font-size: clamp(44px, 5.8vw, 86px); /* ✅ slightly longer like design */
+
+  /* ✅ smaller */
+  font-size: clamp(38px, 5.0vw, 78px);
+
   line-height: 1.05;
   color: #f9f9f9;
   margin: 0;
   letter-spacing: -0.02em;
   position: absolute;
   left: 50%;
-  top: 40%;
+
+  top: 44%;
+
   transform: translate(-50%, -52%);
-  width: min(1300px, 94vw); /* ✅ allow a bit more width */
+  width: min(1300px, 94vw);
 }
 
 .hero__title-regular {
@@ -61,14 +61,16 @@
 }
 
 .hero__title-bold {
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .hero__subtitle {
   font-family: var(--font-poppins);
   font-weight: 500;
-  font-size: clamp(18px, 2.0vw, 28px);
+
+  font-size: clamp(16px, 1.9vw, 28px);
   line-height: 30px;
+
   color: #ffffff;
 
   max-width: 900px;
@@ -77,31 +79,37 @@
 
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 53%;
   transform: translateX(-50%);
-  margin-top: 160px; /* ✅ slightly lower and more like design */
+
+  /* ✅ lower */
+  margin-top: 215px;
 }
 
-/* ✅ arrows lower like design */
+/* arrows */
 .hero__arrows {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translateX(-50%);
-  margin-top: 310px;
+  margin-top: 330px;
 
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0;
 
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.72);
   animation: arrowBounce 1.6s ease-in-out infinite;
 }
 
-.hero__arrows svg {
+.hero__arrow {
   display: block;
-  margin-top: -10px;
+}
+
+.hero__arrow--second {
+  margin-top: -12px;
+  opacity: 0.9;
 }
 
 @keyframes arrowBounce {
@@ -123,22 +131,22 @@
   }
 
   .hero__subtitle {
-    margin-top: 130px;
+    margin-top: 170px;
     line-height: 26px;
   }
 
   .hero__arrows {
-    margin-top: 250px;
+    margin-top: 260px;
   }
 }
 
 @media (max-width: 480px) {
   .hero__subtitle {
-    margin-top: 120px;
+    margin-top: 150px;
     line-height: 24px;
   }
 
   .hero__arrows {
-    margin-top: 235px;
+    margin-top: 245px;
   }
 }

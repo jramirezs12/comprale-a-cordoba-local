@@ -1,5 +1,5 @@
 :root {
-  --color-primary: #1d1d1f;
+  --color-primary: #fbfbed;
   --color-primary-hover: #f0eedd;
   --color-accent: #e8363d;
   --color-accent-dark: #c42b31;
@@ -18,7 +18,7 @@
   --radius-md: 12px;
   --radius-lg: 20px;
   --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  --font-poppins: 'Poppins', 'PP Neue Montreal', system-ui, sans-serif;
+  --font-poppins: 'Poppins', 'Poppins', system-ui, sans-serif;
 }
 
 *,

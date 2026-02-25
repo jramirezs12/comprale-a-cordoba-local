@@ -5,9 +5,9 @@
   left: 50%;
   transform: translateX(-50%);
 
-  width: calc(100% - 48px);
-  max-width: 1750px;
+  width: calc(100% - 36px);
 
+  max-width: 1850px;
   z-index: 1000;
 
   display: flex;
