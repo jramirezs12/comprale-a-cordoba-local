@@ -1,28 +1,43 @@
 import { useQuery } from '@tanstack/react-query';
 import graphqlClient from '../lib/graphqlClient';
-import { SHIPPING_QUOTE } from '../graphql/sellers/queries';
+import { ESTIMATE_SHIPPING_METHODS } from '../graphql/sellers/queries';
 
-export function useShippingQuote({ destinationCityName, productId, qty = 1 } = {}) {
-  const city = String(destinationCityName || '').trim();
-  const cityOk = city.length > 0;
+const DEFAULT_CARRIER_CODE = 'envios';
+const DEFAULT_METHOD_CODE = 'inter';
 
-  const idNum = Number(productId);
-  const idOk = Number.isFinite(idNum) && idNum > 0;
+export function useShippingQuote({ cartId, city, street } = {}) {
+  const cart = String(cartId || '').trim();
+  const cartOk = cart.length > 0;
 
-  const qtyNum = Number(qty);
-  const qtyOk = Number.isFinite(qtyNum) && qtyNum > 0;
+  const cityName = String(city || '').trim();
+  const cityOk = cityName.length > 0;
 
-  const queryKey = ['shippingQuote', city, idOk ? idNum : 0, qtyOk ? qtyNum : 0];
-  const enabled = cityOk && idOk && qtyOk;
+  const streetArr = Array.isArray(street)
+    ? street.map((s) => String(s || '').trim()).filter(Boolean)
+    : [String(street || '').trim()].filter(Boolean);
+
+  const streetOk = streetArr.length > 0;
+
+  const enabled = cartOk && cityOk && streetOk;
 
   return useQuery({
-    queryKey,
+    queryKey: [
+      'estimateShippingMethods',
+      cart,
+      cityName,
+      streetArr.join('|'),
+      DEFAULT_CARRIER_CODE,
+      DEFAULT_METHOD_CODE,
+    ],
     enabled,
     queryFn: () =>
-      graphqlClient.request(SHIPPING_QUOTE, {
-        destinationCityName: city,
-        productId: idNum,
-        qty: qtyNum,
+      graphqlClient.request(ESTIMATE_SHIPPING_METHODS, {
+        cartId: cart,
+        carrierCode: DEFAULT_CARRIER_CODE,
+        methodCode: DEFAULT_METHOD_CODE,
+        city: cityName,
+        street: streetArr,
+        countryCode: 'CO',
       }),
     staleTime: 0,
     refetchOnWindowFocus: false,

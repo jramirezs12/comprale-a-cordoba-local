@@ -4,7 +4,7 @@ import { SELLERS_WITH_PRODUCTS } from '../graphql/sellers/queries';
 
 const PRODUCT_PLACEHOLDER = 'https://via.placeholder.com/200x200?text=Producto';
 const PAGE_SIZE = 20;
-const PRODUCT_LIMIT = 6;
+const PRODUCT_LIMIT = 60;
 
 /**
  * Returns a flat list of products from all sellers, with infinite pagination.

@@ -1,43 +1,22 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 const CartContext = createContext(null);
-
-function toNumberOrNull(v) {
-  const n = Number(v);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
-
-function normalizeProduct(p) {
-  const product = p || {};
-  return {
-    ...product,
-    // id/sku used for UI and cart uniqueness
-    id: product.id ?? product.sku ?? '',
-    sku: product.sku ?? product.id ?? '',
-
-    // numeric id required for shippingQuote (Magento product entity id)
-    productId: toNumberOrNull(product.productId) ?? toNumberOrNull(product.magentoId) ?? toNumberOrNull(product.entity_id) ?? toNumberOrNull(product.entityId),
-
-    // numeric price
-    price: typeof product.price === 'number' ? product.price : Number(product.price || 0),
-  };
-}
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState(() => {
     if (typeof window === 'undefined') return [];
     try {
-      const saved = localStorage.getItem('cart');
-      const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed)
-        ? parsed.map((i) => ({ ...i, product: normalizeProduct(i.product) }))
-        : [];
+      const raw = localStorage.getItem('cart');
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
   });
+
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -45,54 +24,62 @@ export function CartProvider({ children }) {
     } catch { /* empty */ }
   }, [items]);
 
-  const saveItems = (newItems) => setItems(newItems);
+  const openCart = () => setIsCartOpen(true);
+  const closeCart = () => setIsCartOpen(false);
+  const toggleCart = () => setIsCartOpen((v) => !v);
 
   const addItem = (product, sellerId, quantity = 1, sellerName = '') => {
-    const incoming = normalizeProduct(product);
-
     setItems((prev) => {
-      const exists = prev.find((i) => i.product.id === incoming.id);
+      const id = product?.id ?? product?.sku;
+      if (!id) return prev;
 
-      const updated = exists
-        ? prev.map((i) => {
-            if (i.product.id !== incoming.id) return i;
-            // merge, keep productId if it arrives later
-            return {
-              ...i,
-              product: normalizeProduct({ ...i.product, ...incoming }),
-              quantity: i.quantity + quantity,
-            };
-          })
-        : [...prev, { product: incoming, sellerId, sellerName, quantity }];
+      const existing = prev.find((i) => i.product?.id === id);
 
-      return updated;
+      const next = existing
+        ? prev.map((i) => (i.product?.id === id ? { ...i, quantity: i.quantity + quantity } : i))
+        : [...prev, { product: { ...product, id }, sellerId, sellerName, quantity }];
+
+      return next;
     });
-  };
 
-  const removeItem = (productId) => {
-    const updated = items.filter((i) => i.product.id !== productId);
-    saveItems(updated);
+    // ✅ requirement: always open "Tu carrito" when adding
+    setIsCartOpen(true);
   };
 
   const updateQuantity = (productId, quantity) => {
-    if (quantity <= 0) return removeItem(productId);
-    const updated = items.map((i) => (i.product.id === productId ? { ...i, quantity } : i));
-    saveItems(updated);
+    setItems((prev) => {
+      if (quantity <= 0) return prev.filter((i) => i.product?.id !== productId);
+      return prev.map((i) => (i.product?.id === productId ? { ...i, quantity } : i));
+    });
   };
 
-  const clearCart = () => saveItems([]);
+  const removeItem = (productId) => setItems((prev) => prev.filter((i) => i.product?.id !== productId));
+  const clearCart = () => setItems([]);
 
-  const total = items.reduce((sum, i) => sum + (i.product.price || 0) * i.quantity, 0);
-
-  return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, total }}>
-      {children}
-    </CartContext.Provider>
+  const total = useMemo(
+    () => items.reduce((sum, i) => sum + (Number(i.product?.price) || 0) * (Number(i.quantity) || 0), 0),
+    [items]
   );
+
+  const value = {
+    items,
+    total,
+    addItem,
+    updateQuantity,
+    removeItem,
+    clearCart,
+
+    isCartOpen,
+    openCart,
+    closeCart,
+    toggleCart,
+  };
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {
   const ctx = useContext(CartContext);
-  if (!ctx) throw new Error('useCart must be used inside CartProvider');
+  if (!ctx) throw new Error('useCart must be used within CartProvider');
   return ctx;
 }

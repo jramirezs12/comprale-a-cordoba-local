@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import ProductScrollList from './ProductScrollList';
 import { useProductsBySeller } from '../../hooks/useProductsBySeller';
@@ -17,7 +17,7 @@ function mapProductsFromApi(items = [], sellerId) {
   return (items || []).map((p, idx) => ({
     id: p?.sku || `${sellerId || 'seller'}-${idx}`, // route/id still sku
     sku: p?.sku || null,
-    productId: typeof p?.id === 'number' ? p.id : null, // <-- numeric id for shippingQuote
+    productId: typeof p?.id === 'number' ? p.id : null,
     stock: typeof p?.stock_saleable === 'number' ? p.stock_saleable : null,
 
     name: p?.name || '',
@@ -29,9 +29,9 @@ function mapProductsFromApi(items = [], sellerId) {
 }
 
 function SellerCard({ seller, onViewDetail }) {
-  const [offset, setOffset] = useState(0);
   const router = useRouter();
-  const visibleCount = 3;
+
+  const scrollRef = useRef(null);
 
   const sellerId = seller?.id;
   const sellerName = seller?.name || '';
@@ -60,11 +60,17 @@ function SellerCard({ seller, onViewDetail }) {
     }));
   }, [qProducts.data, seller?.products, sellerId]);
 
-  const canPrev = offset > 0;
-  const canNext = offset + visibleCount < products.length;
+  const canScroll = products.length > 0;
 
-  const handlePrev = () => setOffset((o) => Math.max(0, o - 1));
-  const handleNext = () => setOffset((o) => Math.min(Math.max(0, products.length - visibleCount), o + 1));
+  const handlePrev = () => {
+    if (!canScroll) return;
+    scrollRef.current?.prev?.();
+  };
+
+  const handleNext = () => {
+    if (!canScroll) return;
+    scrollRef.current?.next?.();
+  };
 
   const handleSellerNav = () => router.push(`/seller/${sellerId}`);
 
@@ -73,7 +79,7 @@ function SellerCard({ seller, onViewDetail }) {
       <button
         className="seller-card__arrow seller-card__arrow--prev"
         onClick={handlePrev}
-        disabled={!canPrev}
+        disabled={!canScroll}
         aria-label="Productos anteriores"
         type="button"
       >
@@ -100,19 +106,19 @@ function SellerCard({ seller, onViewDetail }) {
 
       <div className="seller-card__right">
         <ProductScrollList
+          ref={scrollRef}
           products={products}
-          offset={offset}
-          visibleCount={visibleCount}
           sellerId={sellerId}
           sellerName={sellerName}
           loading={qProducts.isLoading}
+          visibleCount={3}
         />
       </div>
 
       <button
         className="seller-card__arrow seller-card__arrow--next"
         onClick={handleNext}
-        disabled={!canNext}
+        disabled={!canScroll}
         aria-label="Más productos"
         type="button"
       >

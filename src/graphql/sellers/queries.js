@@ -8,10 +8,19 @@ export const SELLERS_WITH_PRODUCTS = gql`
           items {
             name
             sku
-            image { url }
+            categories {
+              id
+              name
+            }
+            image {
+              url
+            }
             price_range {
               minimum_price {
-                final_price { value currency }
+                final_price {
+                  value
+                  currency
+                }
               }
             }
           }
@@ -51,11 +60,18 @@ export const PRODUCTS_BY_SELLER = gql`
         name
         sku
         stock_saleable
-        image { url }
-        description { html }
+        image {
+          url
+        }
+        description {
+          html
+        }
         price_range {
           minimum_price {
-            final_price { value currency }
+            final_price {
+              value
+              currency
+            }
           }
         }
       }
@@ -63,14 +79,26 @@ export const PRODUCTS_BY_SELLER = gql`
   }
 `;
 
-export const SHIPPING_QUOTE = gql`
-  query ShippingQuote($destinationCityName: String!, $qty: Int!, $productId: Int!) {
-    shippingQuote(
-      dataForQuote: { destinationCityName: $destinationCityName, qty: $qty, productId: $productId }
+export const ESTIMATE_SHIPPING_METHODS = gql`
+  mutation EstimateShippingMethods(
+    $cartId: String!
+    $carrierCode: String!
+    $methodCode: String!
+    $city: String!
+    $street: [String!]!
+    $countryCode: CountryCodeEnum!
+  ) {
+    estimateShippingMethods(
+      input: {
+        shipping_method: { carrier_code: $carrierCode, method_code: $methodCode }
+        cart_id: $cartId
+        address: { country_code: $countryCode, street: $street, city: $city }
+      }
     ) {
-      dateDelivery
-      deliveryDays
-      price
+      amount {
+        currency
+        value
+      }
     }
   }
 `;

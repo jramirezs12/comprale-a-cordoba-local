@@ -3,8 +3,7 @@
 import { useEffect, useRef } from 'react';
 import './Hero.css';
 
-const VIDEO_URL =
-  'https://www.w3schools.com/howto/rain.mp4';
+const VIDEO_URL = 'https://www.w3schools.com/howto/rain.mp4';
 
 function Hero({ nextSectionRef }) {
   const heroRef = useRef(null);
@@ -34,24 +33,22 @@ function Hero({ nextSectionRef }) {
 
   return (
     <section className="hero" ref={heroRef} id="hero">
-      <video
-        className="hero__video"
-        autoPlay
-        loop
-        muted
-        playsInline
-        aria-hidden="true"
-      >
+      <video className="hero__video" autoPlay loop muted playsInline aria-hidden="true">
         <source src={VIDEO_URL} type="video/mp4" />
       </video>
 
       <div className="hero__overlay" />
 
       <div className="hero__content">
-        <h1 className="hero__title">compraleacordoba.com</h1>
+        <h1 className="hero__title" aria-label="compraleacordoba.com">
+          <span className="hero__title-regular">compralea</span>
+          <span className="hero__title-bold">cordoba.com</span>
+        </h1>
+
         <p className="hero__subtitle">
           Un marketplace hecho para ayudarle a los emprendedores de Córdoba a reempezar.
         </p>
+
         <div className="hero__arrows" aria-hidden="true">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6 9 12 15 18 9" />

@@ -1,0 +1,131 @@
+.cat-drawer__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 5000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.cat-drawer__overlay--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.cat-drawer {
+  position: fixed;
+
+  top: 0;
+  right: 0;
+  left: auto;
+  margin: 0;
+
+  height: 100vh;
+  width: 400px;
+  max-width: 100vw;
+
+  background: #0a0a0a;
+  color: #ffffff;
+
+  z-index: 5001;
+  display: flex;
+  flex-direction: column;
+
+  visibility: hidden;
+  pointer-events: none;
+
+  transform: translate3d(420px, 0, 0);
+  transition: transform 0.3s ease, visibility 0s linear 0.3s;
+  box-shadow: -4px 0 32px rgba(0, 0, 0, 0.5);
+
+  font-family: var(--font-sans);
+}
+
+.cat-drawer--open {
+  transform: translate3d(0, 0, 0);
+  visibility: visible;
+  pointer-events: auto;
+  transition: transform 0.3s ease, visibility 0s linear 0s;
+}
+
+.cat-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.cat-drawer__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.cat-drawer__close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+
+.cat-drawer__close:hover {
+  color: #ffffff;
+}
+
+.cat-drawer__empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1rem;
+  padding: 24px;
+  text-align: center;
+}
+
+.cat-drawer__items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 0;
+  list-style: none;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cat-drawer__item {
+  margin: 0;
+}
+
+.cat-drawer__link {
+  display: block;
+  padding: 12px 24px;
+  color: rgba(255, 255, 255, 0.92);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.25;
+  transition: background 0.2s, color 0.2s;
+  border-left: 2px solid transparent;
+}
+
+.cat-drawer__link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border-left-color: #e8363d;
+}
+
+.cat-drawer__link:focus-visible {
+  outline: 2px solid rgba(232, 54, 61, 0.7);
+  outline-offset: -2px;
+}

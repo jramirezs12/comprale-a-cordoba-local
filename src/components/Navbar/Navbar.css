@@ -1,45 +1,56 @@
-/* ── Floating glassmorphism navbar ── */
+/* ── Navbar (wider like design) ── */
 .navbar {
   position: fixed;
   top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  width: calc(100% - 32px);
-  max-width: 1600px;
+
+  width: calc(100% - 48px);
+  max-width: 1750px;
+
   z-index: 1000;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 10px 24px;
-  background: rgba(33, 36, 39, 0.85);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+
+  padding: 18px 24px;
+
+  background: rgba(42, 42, 44, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.30), 0 1px 4px rgba(0, 0, 0, 0.20);
+
+  font-family: var(--font-poppins);
 }
+
 
 /* ── Logo ── */
 .navbar__logo {
   background: none;
   border: none;
   cursor: pointer;
+  margin-left: 8px;
   padding: 0;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
 }
 
 .navbar__logo:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 3px;
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
 }
 
 .navbar__logo-img {
-  height: 25px;
+  height: 21px;
   width: auto;
   display: block;
 }
@@ -47,18 +58,24 @@
 /* ── Segmented search bar ── */
 .navbar__search-bar {
   flex: 1;
-  max-width: 520px;
+  max-width: 560px;
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.10);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
-  border-radius: 50px;
+
+  /* ✅ same tone, slightly transparent too */
+  background: rgba(42, 42, 44, 0.72);
+
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+
   overflow: hidden;
   transition: border-color 0.2s, box-shadow 0.2s;
+
+  min-height: 46px;
 }
 
 .navbar__search-bar:focus-within {
-  border-color: var(--color-accent);
+  border-color: rgba(232, 54, 61, 0.75);
   box-shadow: 0 0 0 3px rgba(232, 54, 61, 0.10);
 }
 
@@ -72,12 +89,12 @@
 .navbar__search-input {
   flex: 1;
   min-width: 0;
-  padding: 10px 14px;
+  padding: 12px 14px;
   border: none;
   outline: none;
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   background: transparent;
-  color: rgba(255, 255, 255, 0.90);
+  color: rgba(255, 255, 255, 0.92);
   font-family: inherit;
 }
 
@@ -86,7 +103,7 @@
 }
 
 .navbar__icon-btn {
-  padding: 8px 12px;
+  padding: 10px 14px;
   color: rgba(255, 255, 255, 0.70);
   display: flex;
   align-items: center;
@@ -100,18 +117,18 @@
 }
 
 .navbar__icon-btn:hover {
-  color: var(--color-white);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .navbar__icon-btn:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid rgba(232, 54, 61, 0.75);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 .navbar__divider {
   width: 1px;
-  height: 24px;
+  height: 23px;
   background: rgba(255, 255, 255, 0.18);
   flex-shrink: 0;
 }
@@ -129,9 +146,13 @@
   .navbar {
     top: 10px;
     width: calc(100% - 20px);
-    padding: 8px 14px;
+    padding: 14px 14px;
     flex-wrap: wrap;
     gap: 10px;
+  }
+
+  .navbar__logo {
+    margin-left: 4px;
   }
 
   .navbar__search-bar {
@@ -144,15 +165,19 @@
 @media (max-width: 480px) {
   .navbar__search-bar {
     flex-direction: column;
-    border-radius: 16px;
+    border-radius: 12px;
     overflow: visible;
+    min-height: auto;
+
+    background: transparent;
+    border: none;
   }
 
   .navbar__segment {
     width: 100%;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.10);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    background: rgba(42, 42, 44, 0.72);
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
   }
 
   .navbar__divider {
@@ -160,4 +185,3 @@
     height: 1px;
   }
 }
-

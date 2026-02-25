@@ -2,26 +2,19 @@
 
 import { useEffect, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import ClientProviders from '../../../providers/ClientProviders';
 import ProductDetailClient from '../../../components/ProductDetail/ProductDetailClient';
 import Navbar from '../../../components/Navbar/Navbar';
 import Footer from '../../../components/Footer/Footer';
-import { sponsors } from '../../../data/mockData';
 import { useProductsBySeller } from '../../../hooks/useProductsBySeller';
 
 const PRODUCT_PLACEHOLDER = 'https://via.placeholder.com/700x700?text=Producto';
 
 function stripHtml(html) {
   if (!html) return '';
-  // Remove <style> blocks (PageBuilder CSS fragments)
   let text = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ');
-  // Remove HTML tags
   text = text.replace(/<[^>]*>/g, ' ');
-  // Remove PageBuilder CSS noise: #html-body [data-pb-style=XXXXX]{property:value}
   text = text.replace(/#[a-zA-Z][\w-]*\s*\[[^\]]*\][^{]*\{[^}]*\}/g, ' ');
-  // Remove stray CSS rule blocks: selector{property:value}
   text = text.replace(/[a-zA-Z#.[\]"=\-_]+\s*\{[^}]*\}/g, ' ');
-  // Collapse whitespace
   return text.replace(/\s+/g, ' ').trim();
 }
 
@@ -30,7 +23,9 @@ function normSku(value) {
   let decoded = s;
   try {
     decoded = decodeURIComponent(s);
-  } catch { /* empty */ }
+  } catch {
+    /* empty */
+  }
   return decoded.replace(/\+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
@@ -66,12 +61,13 @@ export default function ProductDetailPage() {
     return {
       id: found.sku,
       sku: found.sku,
+      productId: typeof found.id === 'number' ? found.id : null,
       name: found.name || '',
       image: found.image?.url || PRODUCT_PLACEHOLDER,
       price: found.price_range?.minimum_price?.final_price?.value ?? 0,
       description: stripHtml(found.description?.html),
       gallery: found.image?.url ? [found.image.url] : [],
-      stock, // <-- aquí va el stock_saleable
+      stock,
     };
   }, [data, rawId]);
 
@@ -82,7 +78,7 @@ export default function ProductDetailPage() {
         <main style={{ padding: '120px 40px', textAlign: 'center', color: '#efefef' }}>
           Producto no encontrado (falta sellerId en la URL).
         </main>
-        <Footer sponsors={sponsors} />
+        <Footer sponsors={[]} />
       </div>
     );
   }
@@ -94,7 +90,7 @@ export default function ProductDetailPage() {
         <main style={{ padding: '120px 40px', textAlign: 'center', color: '#efefef' }}>
           Cargando...
         </main>
-        <Footer sponsors={sponsors} />
+        <Footer sponsors={[]} />
       </div>
     );
   }
@@ -106,7 +102,7 @@ export default function ProductDetailPage() {
         <main style={{ padding: '120px 40px', textAlign: 'center', color: '#efefef' }}>
           Error cargando el producto.
         </main>
-        <Footer sponsors={sponsors} />
+        <Footer sponsors={[]} />
       </div>
     );
   }
@@ -118,14 +114,10 @@ export default function ProductDetailPage() {
         <main style={{ padding: '120px 40px', textAlign: 'center', color: '#efefef' }}>
           Producto no encontrado.
         </main>
-        <Footer sponsors={sponsors} />
+        <Footer sponsors={[]} />
       </div>
     );
   }
 
-  return (
-    <ClientProviders>
-      <ProductDetailClient product={product} sellerId={String(sellerId)} />
-    </ClientProviders>
-  );
+  return <ProductDetailClient product={product} sellerId={String(sellerId)} />;
 }

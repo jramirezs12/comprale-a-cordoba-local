@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useMemo, useEffect } from 'react';
+import { useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar/Navbar';
 import Hero from '../components/Hero/Hero';
@@ -8,8 +8,9 @@ import HowItWorks from '../components/HowItWorks/HowItWorks';
 import SellerSection from '../components/SellerSection/SellerSection';
 import Stats from '../components/Stats/Stats';
 import Footer from '../components/Footer/Footer';
-import { sellers as mockSellers, stats, sponsors } from '../data/mockData';
-import { useSellersWithProducts } from '../hooks/useSellersWithProducts';
+import { stats } from '../data/mockData';
+import { useSellersWithProductsInfinite } from '../hooks/useSellersWithProductsInfinite';
+import { useInfiniteScrollTrigger } from '../hooks/useInfiniteScrollTrigger';
 import './home.css';
 
 const SELLER_PLACEHOLDER = 'https://via.placeholder.com/400x300?text=Negocio';
@@ -22,8 +23,6 @@ function stripHtml(html) {
 function mapSellers(items) {
   return (items || []).map((item) => {
     const s = item?.seller || {};
-
-    // IMPORTANT: products.items can be null in the API response
     const productItems = Array.isArray(item?.products?.items) ? item.products.items : [];
 
     return {
@@ -47,50 +46,27 @@ export default function HomePage() {
   const howItWorksSectionRef = useRef(null);
   const router = useRouter();
 
-  const q = useSellersWithProducts({ pageSize: 100, productLimit: 6, currentPage: 1 });
-
-  useEffect(() => {
-    if (q.isFetching) console.log('[HomePage] sellersWithProducts: fetching...');
-  }, [q.isFetching]);
-
-  useEffect(() => {
-    if (q.error) console.error('[HomePage] sellersWithProducts ERROR:', q.error);
-  }, [q.error]);
-
-  // Better debug: summary + products null/length visibility
-  useEffect(() => {
-    if (!q.data) return;
-
-    const swp = q.data?.sellersWithProducts;
-    const items = swp?.items;
-
-    console.log('[HomePage] swp summary', {
-      total_count: swp?.total_count,
-      items_type: Array.isArray(items) ? 'array' : typeof items,
-      items_length: Array.isArray(items) ? items.length : null,
-    });
-
-    if (Array.isArray(items)) {
-      const preview = items.slice(0, 10).map((it, idx) => ({
-        idx,
-        seller_id: it?.seller?.seller_id,
-        shop_title: it?.seller?.shop_title,
-        shop_url: it?.seller?.shop_url,
-        banner_pic: Boolean(it?.seller?.banner_pic),
-        logo_pic: Boolean(it?.seller?.logo_pic),
-        products_items_type: Array.isArray(it?.products?.items) ? 'array' : typeof it?.products?.items,
-        products_len: Array.isArray(it?.products?.items) ? it.products.items.length : null,
-      }));
-
-      console.table(preview);
-    }
-  }, [q.data]);
+  // ✅ infinite pagination for sellers
+  const q = useSellersWithProductsInfinite({ pageSize: 20, productLimit: 6 });
 
   const sellers = useMemo(() => {
-    const items = q.data?.sellersWithProducts?.items;
-    if (Array.isArray(items) && items.length > 0) return mapSellers(items);
-    return mockSellers;
+    const pages = q.data?.pages || [];
+    const allItems = pages.flatMap((p) => p?.sellersWithProducts?.items || []);
+    return mapSellers(allItems);
   }, [q.data]);
+
+  const canLoadMore = !!q.hasNextPage && !q.isFetchingNextPage;
+
+  const loadMore = useCallback(() => {
+    if (!canLoadMore) return;
+    q.fetchNextPage();
+  }, [canLoadMore, q]);
+
+  const sentinelRef = useInfiniteScrollTrigger({
+    enabled: canLoadMore,
+    onLoadMore: loadMore,
+    rootMargin: '900px',
+  });
 
   return (
     <div className="home-page">
@@ -98,12 +74,12 @@ export default function HomePage() {
       <main>
         <Hero nextSectionRef={howItWorksSectionRef} />
         <HowItWorks sectionRef={howItWorksSectionRef} />
-        <SellerSection
-          sellers={sellers}
-          onSellerClick={(seller) => router.push(`/seller/${seller.id}`)}
-        />
+
+        <SellerSection sellers={sellers} onSellerClick={(seller) => router.push(`/seller/${seller.id}`)} />
+
+        <div ref={sentinelRef} className="home-infinite__sentinel" />
         <Stats stats={stats} />
-        <Footer sponsors={sponsors} />
+        <Footer sponsors={[]} />
       </main>
     </div>
   );

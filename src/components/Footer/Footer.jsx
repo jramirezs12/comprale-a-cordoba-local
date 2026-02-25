@@ -2,7 +2,7 @@ import Image from 'next/image';
 import './Footer.css';
 
 const SUPPORT_LOGOS = [
-  { src: '/brand/gobernacion-cordoba.svg', alt: 'Gobernación de Córdoba' },
+  { src: '/brand/gobernacion-cordoba.png', alt: 'Gobernación de Córdoba' },
   { src: '/brand/desarrollo-economico.svg', alt: 'Secretaría de Desarrollo Económico y Agroindustrial' },
 ];
 
@@ -10,7 +10,7 @@ const MEDIA_LOGOS = [
   { src: '/brand/Forbes.svg', alt: 'Forbes' },
   { src: '/brand/Caracol.svg', alt: 'Caracol' },
   { src: '/brand/ultima-hora.svg', alt: 'Última Hora' },
-  { src: '/brand/el-titular.svg', alt: 'El Titular' },
+  { src: '/brand/el-titular.png', alt: 'El Titular' },
   { src: '/brand/accion-interna.svg', alt: 'Acción Interna' },
 ];
 
@@ -68,8 +68,7 @@ function Footer({ sponsors }) {
         </div>
       </div>
 
-      {/* bottom divider (full width) */}
-      <div className="footer__rule footer__rule--bottom" />
+      {/* ✅ removed bottom divider */}
 
       {/* Copyright (centered) */}
       <div className="footer__container">

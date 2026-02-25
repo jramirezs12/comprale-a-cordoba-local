@@ -55,10 +55,14 @@
   padding-right: 24px;
 }
 
+/*
+  ✅ Change from grid -> flex to center "Apoya:" WITH the logos,
+  so it sits immediately to the left of the first logo (Gobernación).
+*/
 .footer__row-inner {
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 14px;
 }
 
@@ -67,20 +71,21 @@
   font-weight: 600;
   color: rgba(239, 239, 239, 0.9);
   white-space: nowrap;
+  line-height: 1;
 }
 
 .footer__row-label--inline {
   margin-left: 4px;
 }
 
-/* Key changes: centered, smaller gap, wrap, no scroll */
+/* Logos container (centered as a group) */
 .footer__row-logos {
   display: flex;
   align-items: center;
-  justify-content: center; /* center all logos */
-  gap: 16px;              /* tighter spacing */
-  flex-wrap: wrap;        /* allow next line if needed */
-  overflow: visible;      /* no scroll */
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  overflow: visible;
   padding-bottom: 0;
 }
 
@@ -120,9 +125,10 @@
     padding-right: 16px;
   }
 
+  /* Stack label and logos on mobile */
   .footer__row-inner {
-    grid-template-columns: 1fr;
-    justify-items: center;
+    flex-direction: column;
+    justify-content: center;
     gap: 10px;
   }
 

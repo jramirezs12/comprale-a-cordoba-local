@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '../../context/CartContext';
 import { useAllCities } from '../../hooks/useAllCities';
@@ -25,30 +25,16 @@ const DEFAULT_METHOD_CODE = 'inter';
 const DEFAULT_PAYMENT_CODE = 'payzen_standard';
 
 const formatPrice = (price) =>
-  new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0,
-  }).format(price || 0);
+  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price || 0);
 
 const ID_TYPES = ['C.C', 'C.E', 'Pasaporte', 'NIT'];
 const PAYMENT_METHODS = ['Nequi', 'VISA', 'Mastercard', 'G Pay', 'Pay'];
 
-function pickValidProductId(items) {
-  for (const it of items || []) {
-    const p = it?.product || {};
-    const candidate =
-      p.productId ??
-      p.magentoId ??
-      p.entity_id ??
-      p.entityId ??
-      (Number.isFinite(Number(p.sku)) ? Number(p.sku) : null) ??
-      (Number.isFinite(Number(p.id)) ? Number(p.id) : null);
-
-    const n = Number(candidate);
-    if (Number.isFinite(n) && n > 0) return n;
-  }
-  return null;
+function stableCartSignature(items) {
+  return (items || [])
+    .map((i) => `${i?.product?.sku || i?.product?.id}:${i?.quantity || 0}`)
+    .sort()
+    .join('|');
 }
 
 export default function CheckoutForm() {
@@ -77,19 +63,77 @@ export default function CheckoutForm() {
   const [processing, setProcessing] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  // Quote inputs
-  const totalQty = items.reduce((s, i) => s + i.quantity, 0);
-  const firstProductId = pickValidProductId(items);
+  // Cart used ONLY for shipping estimation (to avoid duplication issues)
+  const [estimateCartId, setEstimateCartId] = useState('');
+  const [cartSyncing, setCartSyncing] = useState(false);
+  const syncNonceRef = useRef(0);
 
-  const { data: quoteData, isFetching: shippingLoading } = useShippingQuote({
-    destinationCityName: form.cityName,
-    productId: firstProductId,
-    qty: totalQty,
+  // Build a signature so we can re-sync when items/qty change
+  const cartSignature = useMemo(() => stableCartSignature(items), [items]);
+
+  // Keep estimate cart rebuilt when items change (safe without update/remove mutations)
+  useEffect(() => {
+    let cancelled = false;
+
+    async function rebuildEstimateCart() {
+      if (!items?.length) {
+        setEstimateCartId('');
+        return;
+      }
+
+      // If user hasn't selected city/address yet, we still rebuild the cart so that
+      // once they select city/address the estimate can run instantly.
+      setCartSyncing(true);
+      const nonce = ++syncNonceRef.current;
+
+      try {
+        const cartData = await graphqlGuestClient.request(CREATE_GUEST_CART);
+        const newCartId = cartData?.createGuestCart?.cart?.id;
+        if (!newCartId) throw new Error('No se pudo crear el carrito para cotización.');
+
+        // Add items once to this fresh cart
+        const cartItems = items.map((i) => ({
+          parent_sku: i.product.parent_sku || null,
+          sku: i.product.sku || i.product.id,
+          quantity: i.quantity,
+        }));
+
+        const addRes = await graphqlGuestClient.request(ADD_PRODUCTS_TO_CART, {
+          cartId: newCartId,
+          cartItems,
+        });
+
+        const userErrors = addRes?.addProductsToCart?.user_errors || [];
+        if (userErrors.length) throw new Error(userErrors[0]?.message || 'Error agregando productos al carrito (cotización).');
+
+        // Only apply if latest run
+        if (!cancelled && nonce === syncNonceRef.current) {
+          setEstimateCartId(newCartId);
+        }
+      } catch (e) {
+        console.error('Estimate cart rebuild error:', e);
+        if (!cancelled) setEstimateCartId('');
+      } finally {
+        if (!cancelled && nonce === syncNonceRef.current) setCartSyncing(false);
+      }
+    }
+
+    rebuildEstimateCart();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cartSignature, items]);
+
+  // Estimator: runs when estimateCartId + city + address are present
+  const { data: estimateData, isFetching: shippingLoading } = useShippingQuote({
+    cartId: estimateCartId,
+    city: form.cityName,
+    street: form.address ? [form.address] : [],
   });
 
-  const shippingCost =
-    form.cityName && firstProductId ? (quoteData?.shippingQuote?.price ?? null) : null;
-
+  // RESPONSE IS ARRAY: estimateShippingMethods: [{ amount { value } }]
+  const shippingCost = estimateData?.estimateShippingMethods?.[0]?.amount?.value ?? null;
   const grandTotal = total + (shippingCost || 0);
 
   const clearFieldError = (name) => {
@@ -154,30 +198,27 @@ export default function CheckoutForm() {
     const lastname = nameParts.slice(1).join(' ') || '';
 
     try {
-      // 1) Create guest cart
+      // Checkout cart (separate from estimate cart)
       const cartData = await graphqlGuestClient.request(CREATE_GUEST_CART);
-      const cartId = cartData?.createGuestCart?.cart?.id;
-      if (!cartId) throw new Error('No se pudo crear el carrito invitado.');
+      const checkoutCartId = cartData?.createGuestCart?.cart?.id;
+      if (!checkoutCartId) throw new Error('No se pudo crear el carrito invitado.');
 
-      // 2) Add products to cart (standard)
       const cartItems = items.map((i) => ({
         parent_sku: i.product.parent_sku || null,
         sku: i.product.sku || i.product.id,
         quantity: i.quantity,
       }));
 
-      const addRes = await graphqlGuestClient.request(ADD_PRODUCTS_TO_CART, { cartId, cartItems });
+      const addRes = await graphqlGuestClient.request(ADD_PRODUCTS_TO_CART, { cartId: checkoutCartId, cartItems });
       const userErrors = addRes?.addProductsToCart?.user_errors || [];
       if (userErrors.length) throw new Error(userErrors[0]?.message || 'Error agregando productos al carrito.');
 
-      // 3) Guest email
-      await graphqlGuestClient.request(SET_GUEST_EMAIL, { cartId, email: form.email });
+      await graphqlGuestClient.request(SET_GUEST_EMAIL, { cartId: checkoutCartId, email: form.email });
 
       const regionIdInt = Number(form.regionId);
 
-      // 4) Shipping address (with region_id)
       const shippingResult = await graphqlGuestClient.request(SET_SHIPPING_ADDRESS, {
-        cartId,
+        cartId: checkoutCartId,
         firstname,
         lastname,
         street: form.address,
@@ -186,9 +227,8 @@ export default function CheckoutForm() {
         telephone: form.phone,
       });
 
-      // 5) Billing address
       await graphqlGuestClient.request(SET_BILLING_ADDRESS, {
-        cartId,
+        cartId: checkoutCartId,
         firstname,
         lastname,
         street: form.address,
@@ -197,27 +237,23 @@ export default function CheckoutForm() {
         telephone: form.phone,
       });
 
-      // 6) Shipping method (prefer envios/inter)
       const availableMethods =
         shippingResult?.setShippingAddressesOnCart?.cart?.shipping_addresses?.[0]?.available_shipping_methods || [];
 
       const selectedMethod =
-        availableMethods.find(
-          (m) => m.carrier_code === DEFAULT_CARRIER_CODE && m.method_code === DEFAULT_METHOD_CODE
-        ) ||
-        availableMethods[0] || { carrier_code: DEFAULT_CARRIER_CODE, method_code: DEFAULT_METHOD_CODE };
+        availableMethods.find((m) => m.carrier_code === DEFAULT_CARRIER_CODE && m.method_code === DEFAULT_METHOD_CODE) ||
+        availableMethods[0] ||
+        { carrier_code: DEFAULT_CARRIER_CODE, method_code: DEFAULT_METHOD_CODE };
 
       await graphqlGuestClient.request(SET_SHIPPING_METHODS, {
-        cartId,
+        cartId: checkoutCartId,
         carrierCode: selectedMethod.carrier_code,
         methodCode: selectedMethod.method_code,
       });
 
-      // 7) Payment method
-      await graphqlGuestClient.request(SET_PAYMENT_METHOD, { cartId, code: DEFAULT_PAYMENT_CODE });
+      await graphqlGuestClient.request(SET_PAYMENT_METHOD, { cartId: checkoutCartId, code: DEFAULT_PAYMENT_CODE });
 
-      // 8) Place order
-      const orderData = await graphqlGuestClient.request(PLACE_ORDER, { cartId });
+      const orderData = await graphqlGuestClient.request(PLACE_ORDER, { cartId: checkoutCartId });
       const placeErrors = orderData?.placeOrder?.errors || [];
       if (placeErrors.length) throw new Error(placeErrors[0]?.message || 'Error al crear la orden.');
 
@@ -227,19 +263,13 @@ export default function CheckoutForm() {
       if (!orderId) throw new Error('No se recibió el ID de la orden.');
       if (!orderNumber) throw new Error('No se recibió el número de la orden.');
 
-      // 9) Register payment
-      const paymentData = await graphqlGuestClient.request(REGISTRATE_PAYMENT, {
-        orderId: String(orderId),
-      });
+      const paymentData = await graphqlGuestClient.request(REGISTRATE_PAYMENT, { orderId: String(orderId) });
       const paymentUrl = paymentData?.registratePayment?.payment?.url_payment || null;
 
       clearCart();
 
-      if (paymentUrl) {
-        window.location.href = paymentUrl;
-      } else {
-        router.push(`/checkout/confirmation?order=${orderNumber}`);
-      }
+      if (paymentUrl) window.location.href = paymentUrl;
+      else router.push(`/checkout/confirmation?order=${orderNumber}`);
     } catch (err) {
       console.error('Checkout error:', err);
       setSubmitError(err?.message || 'Hubo un error al procesar tu pedido. Por favor intenta de nuevo.');
@@ -473,7 +503,13 @@ export default function CheckoutForm() {
             <div className="checkout__summary">
               <div className="checkout__summary-row">
                 <span>Costo de envío</span>
-                <span>{shippingLoading ? '...' : shippingCost !== null ? formatPrice(shippingCost) : '$0'}</span>
+                <span>
+                  {cartSyncing || shippingLoading
+                    ? '...'
+                    : shippingCost !== null
+                      ? formatPrice(shippingCost)
+                      : '$0'}
+                </span>
               </div>
 
               <div className="checkout__summary-row">
