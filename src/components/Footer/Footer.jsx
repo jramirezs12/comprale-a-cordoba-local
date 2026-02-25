@@ -3,29 +3,40 @@ import './Footer.css';
 
 function Footer({ sponsors }) {
   return (
-    <footer className="footer">
+    <footer className="footer" aria-label="Pie de página">
       <div className="footer__inner">
+        {/* top divider */}
+        <div className="footer__rule" />
+
+        {/* Organizer row */}
         <div className="footer__organizer">
-          <span className="footer__organizer-label">Organizado por</span>
+          <span className="footer__organizer-label">Organiza:</span>
           <Image
             src="/brand/inter.svg"
             alt="Inter Rapidísimo"
             className="footer__organizer-logo"
-            width={160}
+            width={170}
             height={44}
+            priority={false}
           />
         </div>
 
+        {/* mid divider */}
+        <div className="footer__rule" />
+
+        {/* Sponsors row */}
         {sponsors && sponsors.length > 0 && (
-          <div className="footer__partners">
-            <p className="footer__tagline">Con el apoyo de</p>
-            <div className="footer__logos">
+          <div className="footer__sponsors" aria-label="Aliados">
+            <span className="footer__sponsors-label">Apoya:</span>
+
+            <div className="footer__sponsors-logos" aria-label="Logos de aliados">
               {sponsors.map((sponsor) => (
-                <div className="footer__logo-item" key={sponsor.id}>
+                <div className="footer__sponsor" key={sponsor.id} title={sponsor.name}>
                   <img
                     src={sponsor.logo}
-                    alt={`Logo de ${sponsor.name}`}
-                    className="footer__logo-img"
+                    alt={sponsor.name}
+                    className="footer__sponsor-img"
+                    loading="lazy"
                   />
                 </div>
               ))}
@@ -33,7 +44,9 @@ function Footer({ sponsors }) {
           </div>
         )}
 
-        <div className="footer__divider" />
+        {/* bottom divider */}
+        <div className="footer__rule footer__rule--bottom" />
+
         <p className="footer__copyright">
           © {new Date().getFullYear()} Cómprale a Córdoba · Todos los derechos reservados
         </p>

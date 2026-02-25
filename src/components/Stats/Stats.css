@@ -1,84 +1,117 @@
 .stats {
-  background: #0a0a0a;
-  padding: 80px 32px;
+  background: var(--color-bg);
+  padding: 78px 0;
   text-align: center;
+  overflow: visible;
 }
 
 .stats__inner {
-  max-width: 960px;
+  max-width: 1320px;
   margin: 0 auto;
+  padding: 0 24px;
+  overflow: visible;
 }
 
 .stats__title {
-  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-size: clamp(1.35rem, 2.6vw, 1.9rem);
   font-weight: 800;
-  color: #ffffff;
+  color: #efefef;
   margin-bottom: 56px;
   letter-spacing: -0.5px;
 }
 
 .stats__grid {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  overflow: visible;
+
+  /* more space between columns */
+  gap: clamp(40px, 6.2vw, 112px);
 }
 
 .stat-item {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
-  flex: 1;
-  min-width: 200px;
-  max-width: 280px;
-  padding: 36px 24px;
-  border-radius: 12px;
-  background: #ffffff;
-  color: #0a0a0a;
-  cursor: default;
-  transition: background 0.25s ease, color 0.25s ease;
-}
+  justify-content: flex-end;
 
-.stat-item:hover {
-  background: #0a0a0a;
-  color: #ffffff;
-  outline: 1px solid rgba(255, 255, 255, 0.18);
+  /* a bit more vertical breathing room */
+  gap: 14px;
+
+  overflow: visible;
 }
 
 .stat-item__number {
-  font-size: clamp(2.8rem, 6vw, 4.4rem);
+  /* slightly smaller than before but still huge */
+  font-size: clamp(6.2rem, 12.6vw, 11.5rem);
   font-weight: 900;
-  line-height: 1;
-  letter-spacing: -2px;
-  color: inherit;
+  line-height: 0.9;
+  letter-spacing: -5px;
+  color: #efefef;
+  white-space: nowrap;
+
+  /* “poster” feel but less aggressive */
+  transform: scale(1.04);
+  transform-origin: center bottom;
 }
 
 .stat-item__label {
-  font-size: clamp(0.88rem, 1.5vw, 1rem);
-  font-weight: 500;
-  max-width: 200px;
-  line-height: 1.4;
-  color: inherit;
-  opacity: 0.75;
+  font-size: clamp(0.92rem, 1.5vw, 1.18rem);
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  line-height: 1.1;
+  color: rgba(239, 239, 239, 0.9);
 }
 
-.stat-item:hover .stat-item__label {
-  opacity: 0.65;
+/* Optional: make the 2nd column (RECAUDOS) slightly bigger, like the reference */
+.stat-item:nth-child(2) .stat-item__number {
+  transform: scale(1.06);
+}
+
+@media (min-width: 1200px) {
+  .stats__grid {
+    gap: 128px;
+  }
+}
+
+@media (max-width: 900px) {
+  .stats__grid {
+    grid-template-columns: 1fr;
+    gap: 46px;
+  }
+
+  .stat-item__number {
+    font-size: clamp(6rem, 22vw, 10.5rem);
+    letter-spacing: -4px;
+    transform: none;
+  }
 }
 
 @media (max-width: 600px) {
   .stats {
-    padding: 56px 16px;
+    padding: 56px 0;
   }
 
-  .stats__grid {
-    gap: 16px;
+  .stats__inner {
+    padding: 0 16px;
   }
 
   .stat-item {
-    min-width: 140px;
-    padding: 28px 16px;
+    gap: 12px;
+  }
+
+  .stat-item__number {
+    font-size: clamp(5.4rem, 24vw, 9.5rem);
+    letter-spacing: -4px;
+  }
+
+  .stat-item__label {
+    font-size: 1.05rem;
   }
 }
