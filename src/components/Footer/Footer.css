@@ -1,35 +1,23 @@
 .footer {
   background: #1d1d1f;
-  padding: 0;
 }
 
-/* Keep content centered, but separators full width */
-.footer__inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 32px 22px;
-  text-align: center;
-  position: relative;
-}
-
-/* FULL-BLEED RULES (edge-to-edge) */
+/* Full-width horizontal rules */
 .footer__rule {
   height: 1px;
-  position: relative;
-  margin: 0;
-}
-.footer__rule::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100vw; /* full viewport width */
-  height: 1px;
+  width: 100%;
   background: rgba(255, 255, 255, 0.12);
 }
 
 .footer__rule--bottom {
-  margin-top: 18px;
+  margin-top: 12px;
+}
+
+/* Centered container for organizer + copyright */
+.footer__container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
 }
 
 /* ── Organizer row ── */
@@ -37,64 +25,77 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 22px 0;
+  gap: 12px;
+  padding: 14px 0;
+  text-align: center;
 }
 
 .footer__organizer-label {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: rgba(239, 239, 239, 0.9);
   white-space: nowrap;
 }
 
 .footer__organizer-logo {
-  height: 42px; /* bigger */
+  height: 34px;
   width: auto;
   display: block;
 }
 
-/* ── Sponsors row ── */
-.footer__sponsors {
+/* ── Logos row ── */
+.footer__row {
+  width: 100%;
+  padding: 14px 0;
+}
+
+/* slightly wide but centered like design */
+.footer__row--bleed {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.footer__row-inner {
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 20px;
-  padding: 22px 0;
+  gap: 14px;
 }
 
-.footer__sponsors-label {
-  font-size: 0.95rem;
+.footer__row-label {
+  font-size: 0.9rem;
   font-weight: 600;
   color: rgba(239, 239, 239, 0.9);
   white-space: nowrap;
 }
 
-/* One horizontal line; scroll if needed */
-.footer__sponsors-logos {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 40px; /* more breathing room like design */
-  overflow-x: auto;
-  padding-bottom: 6px;
-  scrollbar-width: none;
-}
-.footer__sponsors-logos::-webkit-scrollbar {
-  display: none;
+.footer__row-label--inline {
+  margin-left: 4px;
 }
 
-.footer__sponsor {
+/* Key changes: centered, smaller gap, wrap, no scroll */
+.footer__row-logos {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* center all logos */
+  gap: 16px;              /* tighter spacing */
+  flex-wrap: wrap;        /* allow next line if needed */
+  overflow: visible;      /* no scroll */
+  padding-bottom: 0;
+}
+
+.footer__logo {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 auto;
   opacity: 0.98;
 }
 
-.footer__sponsor-img {
-  height: 44px; /* bigger logos */
+/* smaller logos so everything fits */
+.footer__logo-img {
+  height: 28px;
   width: auto;
+  max-width: 150px;
   object-fit: contain;
   filter: brightness(0) invert(1);
   opacity: 0.95;
@@ -102,33 +103,39 @@
 
 /* Copyright */
 .footer__copyright {
-  margin: 14px 0 0;
-  font-size: 0.82rem;
+  margin: 10px 0 14px;
+  font-size: 0.8rem;
   color: rgba(239, 239, 239, 0.55);
+  text-align: center;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .footer__inner {
-    padding: 0 16px 22px;
+  .footer__container {
+    padding: 0 16px;
+  }
+
+  .footer__row--bleed {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .footer__row-inner {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 10px;
   }
 
   .footer__organizer-logo {
-    height: 38px;
+    height: 30px;
   }
 
-  .footer__sponsors {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    gap: 12px;
+  .footer__logo-img {
+    height: 24px;
+    max-width: 130px;
   }
 
-  .footer__sponsors-logos {
-    justify-content: center;
-    gap: 28px;
-  }
-
-  .footer__sponsor-img {
-    height: 38px;
+  .footer__row-label--inline {
+    margin-left: 0;
   }
 }

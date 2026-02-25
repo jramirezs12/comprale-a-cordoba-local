@@ -4,8 +4,6 @@
   display: flex;
   flex-direction: column;
   background: #1d1d1f;
-
-  /* adjust if your Navbar height changes */
   --nav-h: 90px;
 }
 
@@ -43,20 +41,14 @@
   width: 100%;
   max-width: 1100px;
   margin: 0 auto;
-
-  /* keep content away from navbar but allow true centering */
   padding: calc(var(--nav-h) + 10px) 32px 40px;
 
-  /* center the grid vertically + horizontally inside remaining viewport */
   display: flex;
   align-items: center;
   justify-content: center;
-
-  /* ensures centering even with little content */
   min-height: calc(100vh - var(--nav-h));
 }
 
-/* Submit error banner */
 .checkout__submit-error {
   background: rgba(232,54,61,0.15);
   border: 1px solid #e8363d;
@@ -68,7 +60,6 @@
   width: 100%;
 }
 
-/* ===== Two-column grid ===== */
 .checkout__grid {
   width: 100%;
   display: grid;
@@ -77,7 +68,6 @@
   align-items: stretch;
 }
 
-/* Shared card base */
 .checkout__col {
   border-radius: 8px;
   overflow: hidden;
@@ -105,7 +95,6 @@
   border: 0;
 }
 
-/* Form fields */
 .checkout__field {
   display: flex;
   flex-direction: column;
@@ -129,7 +118,6 @@
   display: none;
 }
 
-/* Inputs */
 .checkout__input {
   background: #ffffff;
   border: 1px solid #d0d0c8;
@@ -176,7 +164,6 @@
   margin-top: -6px;
 }
 
-/* Checkboxes */
 .checkout__checkbox {
   display: flex;
   align-items: flex-start;
@@ -207,7 +194,6 @@
   text-decoration: underline;
 }
 
-/* Payment section */
 .checkout__form-divider {
   border: none;
   border-top: 1px solid #d0d0c8;
@@ -242,10 +228,12 @@
 
 /* ===== Right column – dark summary card ===== */
 .checkout__col--summary {
-  padding-bottom: 32px;
   background: #0a0a0a;
-  padding: 28px 24px;
+  padding: 28px 24px 32px; /* IMPORTANT: bottom padding not overridden */
   border-radius: 0 8px 8px 0;
+
+  display: flex;
+  flex-direction: column;
 }
 
 .checkout__summary-title {
@@ -351,6 +339,11 @@
   margin: 16px 0;
 }
 
+.checkout__summary-spacer {
+  flex: 1;
+  min-height: 12px;
+}
+
 .checkout__summary {
   display: flex;
   flex-direction: column;
@@ -369,11 +362,11 @@
   font-size: 1.05rem;
   font-weight: 600;
   color: #ffffff;
-  margin-bottom: 28px;
+  margin-bottom: 22px;
 }
 
 .checkout__pay-btn {
-  margin-top: auto;
+  margin-top: 0;
   display: block;
   width: 100%;
   height: 52px;
@@ -397,7 +390,6 @@
   cursor: not-allowed;
 }
 
-/* ===== Responsive ===== */
 @media (max-width: 768px) {
   .checkout__main {
     padding: 90px 16px 40px;
@@ -412,16 +404,11 @@
 
   .checkout__col--form,
   .checkout__col--summary {
-    padding-bottom: 32px;
     border-radius: 8px;
   }
 
   .checkout__col {
     min-height: auto;
-  }
-
-  .checkout__pay-btn {
-    margin-top: 8px;
   }
 }
 

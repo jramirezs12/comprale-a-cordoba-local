@@ -25,10 +25,31 @@ const DEFAULT_METHOD_CODE = 'inter';
 const DEFAULT_PAYMENT_CODE = 'payzen_standard';
 
 const formatPrice = (price) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price || 0);
+  new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(price || 0);
 
 const ID_TYPES = ['C.C', 'C.E', 'Pasaporte', 'NIT'];
 const PAYMENT_METHODS = ['Nequi', 'VISA', 'Mastercard', 'G Pay', 'Pay'];
+
+function pickValidProductId(items) {
+  for (const it of items || []) {
+    const p = it?.product || {};
+    const candidate =
+      p.productId ??
+      p.magentoId ??
+      p.entity_id ??
+      p.entityId ??
+      (Number.isFinite(Number(p.sku)) ? Number(p.sku) : null) ??
+      (Number.isFinite(Number(p.id)) ? Number(p.id) : null);
+
+    const n = Number(candidate);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return null;
+}
 
 export default function CheckoutForm() {
   const router = useRouter();
@@ -47,7 +68,7 @@ export default function CheckoutForm() {
     cityName: '',
     address: '',
     department: '',
-    regionId: '', // string but will be cast to Int when sending
+    regionId: '',
     acceptTerms: false,
     acceptData: false,
   });
@@ -58,11 +79,7 @@ export default function CheckoutForm() {
 
   // Quote inputs
   const totalQty = items.reduce((s, i) => s + i.quantity, 0);
-
-  // IMPORTANT: shippingQuote expects Int productId
-  const firstProductId =
-    items[0]?.product?.productId ??
-    (Number.isFinite(Number(items[0]?.product?.id)) ? Number(items[0]?.product?.id) : null);
+  const firstProductId = pickValidProductId(items);
 
   const { data: quoteData, isFetching: shippingLoading } = useShippingQuote({
     destinationCityName: form.cityName,
@@ -140,13 +157,12 @@ export default function CheckoutForm() {
       // 1) Create guest cart
       const cartData = await graphqlGuestClient.request(CREATE_GUEST_CART);
       const cartId = cartData?.createGuestCart?.cart?.id;
-
       if (!cartId) throw new Error('No se pudo crear el carrito invitado.');
 
       // 2) Add products to cart (standard)
       const cartItems = items.map((i) => ({
         parent_sku: i.product.parent_sku || null,
-        sku: i.product.sku || i.product.id, // sku del simple/hijo
+        sku: i.product.sku || i.product.id,
         quantity: i.quantity,
       }));
 
@@ -183,13 +199,13 @@ export default function CheckoutForm() {
 
       // 6) Shipping method (prefer envios/inter)
       const availableMethods =
-        shippingResult?.setShippingAddressesOnCart?.cart?.shipping_addresses?.[0]
-          ?.available_shipping_methods || [];
+        shippingResult?.setShippingAddressesOnCart?.cart?.shipping_addresses?.[0]?.available_shipping_methods || [];
 
       const selectedMethod =
-        availableMethods.find((m) => m.carrier_code === DEFAULT_CARRIER_CODE && m.method_code === DEFAULT_METHOD_CODE) ||
-        availableMethods[0] ||
-        { carrier_code: DEFAULT_CARRIER_CODE, method_code: DEFAULT_METHOD_CODE };
+        availableMethods.find(
+          (m) => m.carrier_code === DEFAULT_CARRIER_CODE && m.method_code === DEFAULT_METHOD_CODE
+        ) ||
+        availableMethods[0] || { carrier_code: DEFAULT_CARRIER_CODE, method_code: DEFAULT_METHOD_CODE };
 
       await graphqlGuestClient.request(SET_SHIPPING_METHODS, {
         cartId,
@@ -205,13 +221,13 @@ export default function CheckoutForm() {
       const placeErrors = orderData?.placeOrder?.errors || [];
       if (placeErrors.length) throw new Error(placeErrors[0]?.message || 'Error al crear la orden.');
 
-      const orderId = orderData?.placeOrder?.orderV2?.id;       // <-- ESTE es el que necesita registratePayment
-      const orderNumber = orderData?.placeOrder?.orderV2?.number; // <-- este es para mostrar al usuario
+      const orderId = orderData?.placeOrder?.orderV2?.id;
+      const orderNumber = orderData?.placeOrder?.orderV2?.number;
 
       if (!orderId) throw new Error('No se recibió el ID de la orden.');
       if (!orderNumber) throw new Error('No se recibió el número de la orden.');
 
-      // 9) Register payment (must use orderId, NOT orderNumber)
+      // 9) Register payment
       const paymentData = await graphqlGuestClient.request(REGISTRATE_PAYMENT, {
         orderId: String(orderId),
       });
@@ -382,7 +398,10 @@ export default function CheckoutForm() {
             <label className={`checkout__checkbox${errors.acceptTerms ? ' checkout__checkbox--error' : ''}`}>
               <input type="checkbox" name="acceptTerms" checked={form.acceptTerms} onChange={handleChange} />
               <span>
-                Aceptar <a href="#" className="checkout__link">Términos y Condiciones</a>
+                Aceptar{' '}
+                <a href="#" className="checkout__link">
+                  Términos y Condiciones
+                </a>
               </span>
             </label>
             {errors.acceptTerms && <span className="checkout__error">{errors.acceptTerms}</span>}
@@ -449,16 +468,12 @@ export default function CheckoutForm() {
 
             <hr className="checkout__divider" />
 
+            <div className="checkout__summary-spacer" />
+
             <div className="checkout__summary">
               <div className="checkout__summary-row">
                 <span>Costo de envío</span>
-                <span>
-                  {shippingLoading
-                    ? '...'
-                    : shippingCost !== null
-                      ? formatPrice(shippingCost)
-                      : '$0'}
-                </span>
+                <span>{shippingLoading ? '...' : shippingCost !== null ? formatPrice(shippingCost) : '$0'}</span>
               </div>
 
               <div className="checkout__summary-row">
