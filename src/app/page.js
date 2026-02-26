@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useCallback } from 'react';
+import { useMemo, useRef, useCallback, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar/Navbar';
 import Hero from '../components/Hero/Hero';
@@ -11,6 +11,7 @@ import Footer from '../components/Footer/Footer';
 import { stats } from '../data/mockData';
 import { useSellersWithProductsInfinite } from '../hooks/useSellersWithProductsInfinite';
 import { useInfiniteScrollTrigger } from '../hooks/useInfiniteScrollTrigger';
+import OrderSuccessFromUrl from '../components/OrderSuccessModal/OrderSuccessFromUrl';
 import './home.css';
 
 const SELLER_PLACEHOLDER = 'https://via.placeholder.com/400x300?text=Negocio';
@@ -46,7 +47,6 @@ export default function HomePage() {
   const howItWorksSectionRef = useRef(null);
   const router = useRouter();
 
-  // ✅ infinite pagination for sellers
   const q = useSellersWithProductsInfinite({ pageSize: 20, productLimit: 6 });
 
   const sellers = useMemo(() => {
@@ -70,6 +70,11 @@ export default function HomePage() {
 
   return (
     <div className="home-page">
+      {/* ✅ this must be inside Suspense because it uses useSearchParams */}
+      <Suspense fallback={null}>
+        <OrderSuccessFromUrl />
+      </Suspense>
+
       <Navbar />
       <main>
         <Hero nextSectionRef={howItWorksSectionRef} />

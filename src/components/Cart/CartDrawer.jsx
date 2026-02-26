@@ -168,7 +168,7 @@ export default function CartDrawer({ open, onClose }) {
               </div>
 
               <button className="cart-drawer__checkout-btn" onClick={handleCheckout} type="button">
-                Ir al checkout
+                Quiero ayudar
               </button>
             </div>
           </>

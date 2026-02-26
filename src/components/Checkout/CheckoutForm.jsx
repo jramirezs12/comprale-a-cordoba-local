@@ -9,13 +9,7 @@ import graphqlGuestClient from '../../lib/graphqlGuestClient';
 import {
   CREATE_GUEST_CART,
   ADD_PRODUCTS_TO_CART,
-  SET_GUEST_EMAIL,
-  SET_SHIPPING_ADDRESS,
-  SET_BILLING_ADDRESS,
-  SET_SHIPPING_METHODS,
-  SET_PAYMENT_METHOD,
-  PLACE_ORDER,
-  REGISTRATE_PAYMENT,
+  CREATE_CHECKOUT_PAYMENT,
 } from '../../graphql/checkout/mutations';
 import Navbar from '../Navbar/Navbar';
 import './Checkout.css';
@@ -213,12 +207,12 @@ export default function CheckoutForm() {
       const userErrors = addRes?.addProductsToCart?.user_errors || [];
       if (userErrors.length) throw new Error(userErrors[0]?.message || 'Error agregando productos al carrito.');
 
-      await graphqlGuestClient.request(SET_GUEST_EMAIL, { cartId: checkoutCartId, email: form.email });
 
-      const regionIdInt = Number(form.regionId);
+        const regionIdInt = Number(form.regionId);
 
-      const shippingResult = await graphqlGuestClient.request(SET_SHIPPING_ADDRESS, {
+      const checkoutPaymentRes = await graphqlGuestClient.request(CREATE_CHECKOUT_PAYMENT, {
         cartId: checkoutCartId,
+        email: form.email,
         firstname,
         lastname,
         street: form.address,
@@ -227,49 +221,13 @@ export default function CheckoutForm() {
         telephone: form.phone,
       });
 
-      await graphqlGuestClient.request(SET_BILLING_ADDRESS, {
-        cartId: checkoutCartId,
-        firstname,
-        lastname,
-        street: form.address,
-        city: form.cityName,
-        regionId: regionIdInt,
-        telephone: form.phone,
-      });
-
-      const availableMethods =
-        shippingResult?.setShippingAddressesOnCart?.cart?.shipping_addresses?.[0]?.available_shipping_methods || [];
-
-      const selectedMethod =
-        availableMethods.find((m) => m.carrier_code === DEFAULT_CARRIER_CODE && m.method_code === DEFAULT_METHOD_CODE) ||
-        availableMethods[0] ||
-        { carrier_code: DEFAULT_CARRIER_CODE, method_code: DEFAULT_METHOD_CODE };
-
-      await graphqlGuestClient.request(SET_SHIPPING_METHODS, {
-        cartId: checkoutCartId,
-        carrierCode: selectedMethod.carrier_code,
-        methodCode: selectedMethod.method_code,
-      });
-
-      await graphqlGuestClient.request(SET_PAYMENT_METHOD, { cartId: checkoutCartId, code: DEFAULT_PAYMENT_CODE });
-
-      const orderData = await graphqlGuestClient.request(PLACE_ORDER, { cartId: checkoutCartId });
-      const placeErrors = orderData?.placeOrder?.errors || [];
-      if (placeErrors.length) throw new Error(placeErrors[0]?.message || 'Error al crear la orden.');
-
-      const orderId = orderData?.placeOrder?.orderV2?.id;
-      const orderNumber = orderData?.placeOrder?.orderV2?.number;
-
-      if (!orderId) throw new Error('No se recibió el ID de la orden.');
-      if (!orderNumber) throw new Error('No se recibió el número de la orden.');
-
-      const paymentData = await graphqlGuestClient.request(REGISTRATE_PAYMENT, { orderId: String(orderId) });
-      const paymentUrl = paymentData?.registratePayment?.payment?.url_payment || null;
+      const payment = checkoutPaymentRes?.CreateCheckoutPayment?.payment || null;
+      const paymentUrl = payment?.url_payment || null;
 
       clearCart();
 
       if (paymentUrl) window.location.href = paymentUrl;
-      else router.push(`/checkout/confirmation?order=${orderNumber}`);
+      else throw new Error('No se recibió la URL de pago.');
     } catch (err) {
       console.error('Checkout error:', err);
       setSubmitError(err?.message || 'Hubo un error al procesar tu pedido. Por favor intenta de nuevo.');

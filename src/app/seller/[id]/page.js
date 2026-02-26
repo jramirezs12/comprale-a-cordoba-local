@@ -55,22 +55,19 @@ function SellerDetailContent({ id }) {
     return out;
   }, [productsQ.data]);
 
-  const sellerName = seller?.shop_title || 'Negocio';
+  const sellerName = seller?.shop_title || 'Ayuda a Cordoba';
   const sellerDescription = seller?.description || '';
   const bannerUrl = ensureHiRes(seller?.banner_pic || '');
 
   const loading = sellerLoading || productsQ.isLoading;
 
-  // ✅ define canLoadMore early
   const canLoadMore = !!productsQ.hasNextPage && !productsQ.isFetchingNextPage;
 
-  // ✅ stable callback for hook deps
   const loadMore = useCallback(() => {
     if (!canLoadMore) return;
     productsQ.fetchNextPage();
   }, [canLoadMore, productsQ]);
 
-  // ✅ IMPORTANT: call hook ALWAYS (no conditional)
   const sentinelRef = useInfiniteScrollTrigger({
     enabled: !loading && !sellerError && !!seller && canLoadMore,
     onLoadMore: loadMore,
@@ -166,7 +163,6 @@ function SellerDetailContent({ id }) {
                   ))}
                 </div>
 
-                {/* sentinel always exists; it just won't load when disabled */}
                 <div ref={sentinelRef} style={{ height: 1 }} />
 
                 {productsQ.isFetchingNextPage ? <p className="sdp-products__state">Cargando más productos…</p> : null}
