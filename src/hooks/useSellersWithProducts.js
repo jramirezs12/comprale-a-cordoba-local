@@ -9,20 +9,9 @@ export function useSellersWithProducts({ pageSize = 50, productLimit = 50, enabl
     enabled,
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
-      try {
-        const currentPage = Number(pageParam || 1);
-        // eslint-disable-next-line no-console
-        console.log('[useSellersWithProducts] vars:', { pageSize, productLimit, currentPage });
-
-        const data = await graphqlClient.request(SELLERS_WITH_PRODUCTS, { pageSize, productLimit, currentPage });
-        return normalizeSellersWithProductsResponse(data);
-      } catch (e) {
-        console.error('[useSellersWithProducts] graphql-request error:', {
-          message: e?.message,
-          response: e?.response,
-        });
-        throw e;
-      }
+      const currentPage = Number(pageParam || 1);
+      const data = await graphqlClient.request(SELLERS_WITH_PRODUCTS, { pageSize, productLimit, currentPage });
+      return normalizeSellersWithProductsResponse(data);
     },
     getNextPageParam: (lastPage) => {
       const pageInfo = lastPage?.sellersWithProducts?.page_info;

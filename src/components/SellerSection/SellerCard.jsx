@@ -4,14 +4,11 @@ import { useMemo, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ProductScrollList from './ProductScrollList';
 import { useProductsBySeller } from '../../hooks/useProductsBySeller';
+import { stripHtml } from '../../utils/html';
 import './SellerCard.css';
 
 const SELLER_PLACEHOLDER = 'https://via.placeholder.com/600x400?text=Negocio';
 const PRODUCT_PLACEHOLDER = 'https://via.placeholder.com/400x400?text=Producto';
-
-function stripHtml(html) {
-  return (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-}
 
 function mapProductsFromApi(items = [], sellerId) {
   return (items || []).map((p, idx) => ({

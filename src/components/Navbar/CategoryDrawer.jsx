@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useCallback, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useCategories } from '../../hooks/useCategories';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import './CategoryDrawer.css';
 
 function pickChildren(categoriesData) {
@@ -23,32 +25,8 @@ export default function CategoryDrawer({ open, onClose }) {
   useEffect(() => setMounted(true), []);
   const portalTarget = mounted ? document.body : null;
 
-  // Lock body scroll when drawer is open (same as cart)
-  useEffect(() => {
-    if (!mounted) return;
-
-    if (open) document.body.style.overflow = 'hidden';
-    else document.body.style.overflow = '';
-
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [open, mounted]);
-
-  // Close on ESC key (same as cart)
-  const handleKeyDown = useCallback(
-    (e) => {
-      if (e.key === 'Escape') onClose();
-    },
-    [onClose]
-  );
-
-  useEffect(() => {
-    if (!mounted) return;
-
-    if (open) document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, handleKeyDown, mounted]);
+  useBodyScrollLock(open && mounted);
+  useEscapeKey(open && mounted, onClose);
 
   if (!portalTarget) return null;
 

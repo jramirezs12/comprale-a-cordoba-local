@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useCart } from '../../context/CartContext';
+import { formatPrice } from '../../utils/format';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import './CartDrawer.css';
-
-const formatPrice = (price) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price);
 
 export default function CartDrawer({ open, onClose }) {
   const { items, updateQuantity, removeItem, total } = useCart();
@@ -19,32 +19,8 @@ export default function CartDrawer({ open, onClose }) {
   useEffect(() => setMounted(true), []);
   const portalTarget = mounted ? document.body : null;
 
-  // ✅ lock body scroll when open
-  useEffect(() => {
-    if (!mounted) return;
-
-    if (open) document.body.style.overflow = 'hidden';
-    else document.body.style.overflow = '';
-
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [open, mounted]);
-
-  // ✅ close on ESC
-  const handleKeyDown = useCallback(
-    (e) => {
-      if (e.key === 'Escape') onClose();
-    },
-    [onClose]
-  );
-
-  useEffect(() => {
-    if (!mounted) return;
-
-    if (open) document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, handleKeyDown, mounted]);
+  useBodyScrollLock(open && mounted);
+  useEscapeKey(open && mounted, onClose);
 
   const handleCheckout = () => {
     onClose();

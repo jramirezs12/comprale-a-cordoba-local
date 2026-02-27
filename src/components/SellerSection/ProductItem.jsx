@@ -3,15 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useCart } from '../../context/CartContext';
 import { useState } from 'react';
+import { formatPrice } from '../../utils/format';
+import { encodePathSegment } from '../../utils/url';
 import './ProductItem.css';
-
-const formatPrice = (price) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price || 0);
-
-function encodePathSegment(value) {
-  // Encodes everything unsafe for a URL path segment (spaces, ñ, %, etc)
-  return encodeURIComponent(String(value ?? ''));
-}
 
 function ProductItem({ product, sellerId, sellerName }) {
   const router = useRouter();

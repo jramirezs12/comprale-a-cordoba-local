@@ -1,41 +1,15 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import ProductDetailClient from '../../../components/ProductDetail/ProductDetailClient';
 import Navbar from '../../../components/Navbar/Navbar';
 import Footer from '../../../components/Footer/Footer';
 import { useProductsBySeller } from '../../../hooks/useProductsBySeller';
+import { stripHtmlDeep } from '../../../utils/html';
+import { normSku } from '../../../utils/url';
 
 const PRODUCT_PLACEHOLDER = 'https://via.placeholder.com/700x700?text=Producto';
-
-function stripHtml(html) {
-  if (!html) return '';
-  let text = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ');
-  text = text.replace(/<[^>]*>/g, ' ');
-  text = text.replace(/#[a-zA-Z][\w-]*\s*\[[^\]]*\][^{]*\{[^}]*\}/g, ' ');
-  text = text.replace(/[a-zA-Z#.[\]"=\-_]+\s*\{[^}]*\}/g, ' ');
-  return text.replace(/\s+/g, ' ').trim();
-}
-
-function safeDecodeURIComponent(value) {
-  const s = String(value ?? '');
-
-  // If there are stray % not followed by two hex digits, escape them so decode doesn't throw.
-  const sanitized = s.replace(/%(?![0-9A-Fa-f]{2})/g, '%25');
-
-  try {
-    return decodeURIComponent(sanitized);
-  } catch {
-    return s;
-  }
-}
-
-function normSku(value) {
-  const s = String(value ?? '');
-  const decoded = safeDecodeURIComponent(s);
-  return decoded.replace(/\+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-}
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -50,12 +24,6 @@ export default function ProductDetailPage() {
     currentPage: 1,
     enabled: Boolean(sellerId),
   });
-
-  useEffect(() => {
-    if (!data?.productsBySeller?.items) return;
-    // eslint-disable-next-line no-console
-    console.log('[PDP] rawId:', rawId, 'normId:', normSku(rawId));
-  }, [data, rawId]);
 
   const product = useMemo(() => {
     const items = data?.productsBySeller?.items;
@@ -74,7 +42,7 @@ export default function ProductDetailPage() {
       name: found.name || '',
       image: found.image?.url || PRODUCT_PLACEHOLDER,
       price: found.price_range?.minimum_price?.final_price?.value ?? 0,
-      description: stripHtml(found.description?.html),
+      description: stripHtmlDeep(found.description?.html),
       gallery: found.image?.url ? [found.image.url] : [],
       stock,
     };

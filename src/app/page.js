@@ -12,14 +12,11 @@ import { stats } from '../data/mockData';
 import { useSellersWithProductsInfinite } from '../hooks/useSellersWithProductsInfinite';
 import { useInfiniteScrollTrigger } from '../hooks/useInfiniteScrollTrigger';
 import OrderSuccessFromUrl from '../components/OrderSuccessModal/OrderSuccessFromUrl';
+import { stripHtml } from '../utils/html';
 import './home.css';
 
 const SELLER_PLACEHOLDER = 'https://via.placeholder.com/400x300?text=Negocio';
 const PRODUCT_PLACEHOLDER = 'https://via.placeholder.com/200x200?text=Producto';
-
-function stripHtml(html) {
-  return (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-}
 
 function mapSellers(items) {
   return (items || []).map((item) => {
