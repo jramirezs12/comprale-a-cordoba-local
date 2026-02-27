@@ -1,11 +1,10 @@
 'use client';
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import ProductItem from './ProductItem';
+import { usePauseResume } from '../../hooks/usePauseResume';
+import { useAutoScroll } from '../../hooks/useAutoScroll';
 import './ProductScrollList.css';
-
-const AUTOSCROLL_MS = 3500;
-const RESUME_AFTER_MS = 2500;
 
 function getCardStepPx(trackEl) {
   if (!trackEl) return 280;
@@ -39,17 +38,9 @@ const ProductScrollList = forwardRef(function ProductScrollList(
   const startXRef = useRef(0);
   const startScrollLeftRef = useRef(0);
 
-  // Pause/resume autoscroll on interaction
-  const resumeTimerRef = useRef(null);
-  const [paused, setPaused] = useState(false);
+  const { paused, pauseAuto } = usePauseResume(2500);
 
   const visible = useMemo(() => products || [], [products]);
-
-  const pauseAuto = useCallback(() => {
-    setPaused(true);
-    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
-    resumeTimerRef.current = window.setTimeout(() => setPaused(false), RESUME_AFTER_MS);
-  }, []);
 
   const reportLimits = useCallback(() => {
     const el = trackRef.current;
@@ -58,14 +49,15 @@ const ProductScrollList = forwardRef(function ProductScrollList(
     return limits;
   }, [onLimitsChange]);
 
+  const getStepPx = useCallback(() => getCardStepPx(trackRef.current), []);
+
   const scrollByStep = useCallback(
     (dir, behavior = 'smooth') => {
       const el = trackRef.current;
       if (!el) return;
-      const step = getCardStepPx(el);
-      el.scrollBy({ left: dir * step, behavior });
+      el.scrollBy({ left: dir * getStepPx(), behavior });
     },
-    []
+    [getStepPx]
   );
 
   const scrollNext = useCallback(() => scrollByStep(1), [scrollByStep]);
@@ -75,44 +67,15 @@ const ProductScrollList = forwardRef(function ProductScrollList(
   useImperativeHandle(
     ref,
     () => ({
-      next: () => {
-        pauseAuto();
-        scrollNext();
-      },
-      prev: () => {
-        pauseAuto();
-        scrollPrev();
-      },
+      next: () => { pauseAuto(); scrollNext(); },
+      prev: () => { pauseAuto(); scrollPrev(); },
       pause: () => pauseAuto(),
       getLimits: () => reportLimits(),
     }),
     [pauseAuto, scrollNext, scrollPrev, reportLimits]
   );
 
-  // Auto-scroll
-  useEffect(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    if (!visible || visible.length === 0) return;
-    if (paused) return;
-
-    const id = window.setInterval(() => {
-      const max = el.scrollWidth - el.clientWidth;
-      const nearEnd = el.scrollLeft >= max - 8;
-
-      if (nearEnd) el.scrollTo({ left: 0, behavior: 'smooth' });
-      else scrollNext();
-    }, AUTOSCROLL_MS);
-
-    return () => window.clearInterval(id);
-  }, [visible, paused, scrollNext]);
-
-  // Cleanup resume timer
-  useEffect(() => {
-    return () => {
-      if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
-    };
-  }, []);
+  useAutoScroll({ trackRef, items: visible, paused, getStepPx, intervalMs: 3500 });
 
   // Initial limits + update when products change
   useEffect(() => {

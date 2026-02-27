@@ -7,48 +7,17 @@ import Footer from '../../components/Footer/Footer';
 import { useCart } from '../../context/CartContext';
 import ProductItem from '../SellerSection/ProductItem';
 import { useSimilarProducts } from '../../hooks/useSimilarProducts';
+import { formatPrice } from '../../utils/format';
+import { decodeHtmlEntities, normalizeSpaces, stripHtmlDeep } from '../../utils/html';
+import { usePauseResume } from '../../hooks/usePauseResume';
+import { useAutoScroll } from '../../hooks/useAutoScroll';
 import './ProductDetail.css';
-
-const formatPrice = (price) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price || 0);
 
 function clampQty(qty, stock) {
   if (typeof stock !== 'number') return Math.max(1, qty);
   if (stock <= 0) return 1;
   return Math.min(Math.max(1, qty), stock);
 }
-
-/** Decodes HTML entities like &lt; &nbsp; &oacute; etc. */
-function decodeHtmlEntities(input) {
-  const s = String(input || '');
-  if (!s) return '';
-  if (typeof globalThis.window === 'undefined') return s;
-
-  const txt = document.createElement('textarea');
-  txt.innerHTML = s;
-  return txt.value;
-}
-
-/** Remove HTML tags and cleanup whitespace */
-function stripHtml(html) {
-  return String(html || '')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-/** Normalize NBSP and repeated spaces */
-function normalizeSpaces(text) {
-  return String(text || '')
-    .replace(/\u00A0/g, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-const AUTOSCROLL_MS = 3500;
-const RESUME_AFTER_MS = 2500;
 
 export default function ProductDetailClient({ product, sellerId }) {
   const gallery = product.gallery?.length ? product.gallery : [product.image];
@@ -74,7 +43,7 @@ export default function ProductDetailClient({ product, sellerId }) {
 
   const cleanDescription = useMemo(() => {
     const decoded = decodeHtmlEntities(product.description);
-    const stripped = stripHtml(decoded);
+    const stripped = stripHtmlDeep(decoded);
     const normalized = normalizeSpaces(stripped);
     return normalized || 'Sin descripción disponible.';
   }, [product.description]);
@@ -86,21 +55,7 @@ export default function ProductDetailClient({ product, sellerId }) {
 
   const similarScrollRef = useRef(null);
 
-  // Pause/resume auto-scroll on interaction
-  const resumeTimerRef = useRef(null);
-  const [paused, setPaused] = useState(false);
-
-  const pauseAuto = useCallback(() => {
-    setPaused(true);
-    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
-    resumeTimerRef.current = window.setTimeout(() => setPaused(false), RESUME_AFTER_MS);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
-    };
-  }, []);
+  const { paused, pauseAuto } = usePauseResume(2500);
 
   const getStepPx = useCallback(() => {
     const el = similarScrollRef.current;
@@ -158,23 +113,7 @@ export default function ProductDetailClient({ product, sellerId }) {
     return () => el.removeEventListener('scroll', onScroll);
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, pauseAuto, updateArrowState]);
 
-  // Auto-scroll (optional): loops back to start when reaching end
-  useEffect(() => {
-    const el = similarScrollRef.current;
-    if (!el) return;
-    if (!similarItems || similarItems.length === 0) return;
-    if (paused) return;
-
-    const id = window.setInterval(() => {
-      const max = el.scrollWidth - el.clientWidth;
-      const nearEnd = el.scrollLeft >= max - 8;
-
-      if (nearEnd) el.scrollTo({ left: 0, behavior: 'smooth' });
-      else el.scrollBy({ left: getStepPx(), behavior: 'smooth' });
-    }, AUTOSCROLL_MS);
-
-    return () => window.clearInterval(id);
-  }, [similarItems, paused, getStepPx]);
+  useAutoScroll({ trackRef: similarScrollRef, items: similarItems, paused, getStepPx, intervalMs: 3500 });
 
   // Keyboard when focused
   const handleSimilarKeyDown = (e) => {

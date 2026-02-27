@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useTrackShipment } from '../../hooks/useTrackShipment';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import './TrackingModal.css';
 
 export default function TrackingModal({ open, trackNumber, onClose }) {
@@ -9,14 +9,7 @@ export default function TrackingModal({ open, trackNumber, onClose }) {
 
   const info = data?.trackShipment || null;
 
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') onClose?.();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
+  useEscapeKey(open, onClose);
 
   if (!open) return null;
 
