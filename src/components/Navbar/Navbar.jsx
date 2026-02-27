@@ -1,22 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import CartIcon from './CartIcon';
 import MenuDropdown from './MenuDropdown';
 import TrackingModal from '../TrackingModal/TrackingModal';
+import SearchPanel from './SearchPanel';
+import { useProductSearch } from '../../hooks/useProductSearch';
 import './Navbar.css';
+
+function encodePathSegment(value) {
+  return encodeURIComponent(String(value ?? ''));
+}
 
 function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [trackingQuery, setTrackingQuery] = useState('');
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
 
+  const [searchOpen, setSearchOpen] = useState(false);
+
   const router = useRouter();
+
+  const search = useProductSearch(searchQuery, { enabled: true });
+  const results = useMemo(() => search.products || [], [search.products]);
 
   const handleProductSearchSubmit = (e) => {
     e.preventDefault();
+    if (String(searchQuery || '').trim().length >= 2) setSearchOpen(true);
   };
 
   const openTracking = () => {
@@ -30,22 +42,24 @@ function Navbar() {
     openTracking();
   };
 
-  const handleLogoClick = () => {
-    router.push('/');
+  const handleLogoClick = () => router.push('/');
+
+  const handleSelectProduct = (p) => {
+    setSearchOpen(false);
+    setSearchQuery('');
+
+    const sellerQ = p?.sellerId ? `?seller=${encodeURIComponent(String(p.sellerId))}` : '';
+    const productSegment = encodePathSegment(p?.sku); // ✅ critical: prevents invalid % / ñ / spaces issues
+    router.push(`/product/${productSegment}${sellerQ}`);
   };
+
+  const shouldAutoOpen = String(searchQuery || '').trim().length >= 2;
 
   return (
     <>
       <nav className="navbar" aria-label="Navegación principal">
         <button className="navbar__logo" onClick={handleLogoClick} aria-label="Ir al inicio">
-          <Image
-            src="/brand/inter.svg"
-            alt="Inter Rapidísimo"
-            className="navbar__logo-img"
-            width={96}
-            height={28}
-            priority
-          />
+          <Image src="/brand/inter.svg" alt="Inter Rapidísimo" className="navbar__logo-img" width={96} height={28} priority />
         </button>
 
         <div className="navbar__search-bar" role="search" aria-label="Búsqueda y rastreo">
@@ -55,8 +69,19 @@ function Navbar() {
               className="navbar__search-input"
               placeholder="Busca tu producto"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Buscar productos o negocios"
+              onChange={(e) => {
+                const v = e.target.value;
+                setSearchQuery(v);
+                if (v.trim().length >= 2) setSearchOpen(true);
+              }}
+              onFocus={() => {
+                if (shouldAutoOpen) setSearchOpen(true);
+              }}
+              aria-label="Buscar productos"
+              inputMode="search"
+              autoCorrect="off"
+              autoCapitalize="none"
+              enterKeyHint="search"
             />
             <button type="submit" className="navbar__icon-btn" aria-label="Buscar">
               <svg
@@ -86,6 +111,10 @@ function Navbar() {
               value={trackingQuery}
               onChange={(e) => setTrackingQuery(e.target.value)}
               aria-label="Número de guía de envío"
+              inputMode="search"
+              autoCorrect="off"
+              autoCapitalize="none"
+              enterKeyHint="go"
             />
             <button type="submit" className="navbar__icon-btn" aria-label="Rastrear envío">
               <svg
@@ -111,6 +140,16 @@ function Navbar() {
           <MenuDropdown />
         </div>
       </nav>
+
+      <SearchPanel
+        open={searchOpen && shouldAutoOpen}
+        anchorTop={96}
+        query={searchQuery}
+        results={results}
+        loading={search.isFetching && search.queryEnabled}
+        onClose={() => setSearchOpen(false)}
+        onSelect={handleSelectProduct}
+      />
 
       <TrackingModal open={isTrackingOpen} trackNumber={trackingQuery} onClose={() => setIsTrackingOpen(false)} />
     </>

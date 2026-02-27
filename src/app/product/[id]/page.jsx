@@ -18,14 +18,22 @@ function stripHtml(html) {
   return text.replace(/\s+/g, ' ').trim();
 }
 
+function safeDecodeURIComponent(value) {
+  const s = String(value ?? '');
+
+  // If there are stray % not followed by two hex digits, escape them so decode doesn't throw.
+  const sanitized = s.replace(/%(?![0-9A-Fa-f]{2})/g, '%25');
+
+  try {
+    return decodeURIComponent(sanitized);
+  } catch {
+    return s;
+  }
+}
+
 function normSku(value) {
   const s = String(value ?? '');
-  let decoded = s;
-  try {
-    decoded = decodeURIComponent(s);
-  } catch {
-    /* empty */
-  }
+  const decoded = safeDecodeURIComponent(s);
   return decoded.replace(/\+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
@@ -33,7 +41,7 @@ export default function ProductDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
 
-  const rawId = params?.id;
+  const rawId = params?.id; // Next returns decoded segment, but we still handle safely
   const sellerId = searchParams?.get('seller');
 
   const { data, isLoading, isError } = useProductsBySeller({
@@ -45,6 +53,7 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (!data?.productsBySeller?.items) return;
+    // eslint-disable-next-line no-console
     console.log('[PDP] rawId:', rawId, 'normId:', normSku(rawId));
   }, [data, rawId]);
 

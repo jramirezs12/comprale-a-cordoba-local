@@ -1,23 +1,16 @@
 'use client';
 
-import { use } from 'react';
-import { useRouter } from 'next/navigation';
+import { use, useMemo } from 'react';
 import Navbar from '../../../components/Navbar/Navbar';
 import Footer from '../../../components/Footer/Footer';
 import { useCategories } from '../../../hooks/useCategories';
 import { useProductsByCategory } from '../../../hooks/useProductsByCategory';
-import { useCart } from '../../../context/CartContext';
+import { useInfiniteScrollTrigger } from '../../../hooks/useInfiniteScrollTrigger';
+import ProductItem from '../../../components/SellerSection/ProductItem';
 import '../../../pages/CategoryPage.css';
 
-const formatPrice = (price) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price || 0);
-
 function CategoryContent({ id }) {
-  const router = useRouter();
-  const { addItem } = useCart();
-
   const { data: catData } = useCategories();
-
   const categoryIdNum = Number(id);
 
   const categoryName = (() => {
@@ -30,12 +23,33 @@ function CategoryContent({ id }) {
     return 'Categoría';
   })();
 
-  const { products, isLoading, isError } = useProductsByCategory({
+  const {
+    products,
+    isLoading,
+    isError,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useProductsByCategory({
     categoryId: categoryIdNum,
-    pageSize: 100,
-    productLimit: 12,
-    currentPage: 1,
+    pageSize: 50,      // ✅ sellers per page
+    productLimit: 50,  // ✅ products per seller
   });
+
+  const canLoadMore = !!hasNextPage && !isFetchingNextPage;
+
+  const sentinelRef = useInfiniteScrollTrigger({
+    enabled: canLoadMore && !isLoading && !isError,
+    onLoadMore: () => fetchNextPage(),
+    rootMargin: '900px',
+  });
+
+  const stateText = useMemo(() => {
+    if (isLoading) return 'Cargando…';
+    if (isError) return 'Error cargando productos.';
+    if (products.length === 0) return 'No hay productos en esta categoría.';
+    return '';
+  }, [isLoading, isError, products.length]);
 
   return (
     <div className="category-page">
@@ -59,47 +73,28 @@ function CategoryContent({ id }) {
               Productos disponibles
             </h2>
 
-            {isLoading ? (
-              <p className="cat-products__state">Cargando…</p>
-            ) : isError ? (
-              <p className="cat-products__state">Error cargando productos.</p>
-            ) : products.length === 0 ? (
-              <p className="cat-products__state">No hay productos en esta categoría.</p>
+            {stateText ? (
+              <p className="cat-products__state">{stateText}</p>
             ) : (
-              <div className="cat-products__grid" role="list" aria-label={`Productos de ${categoryName}`}>
-                {products.map((product) => (
-                  <article className="cat-card" key={`${product.sellerId}-${product.sku}`} role="listitem">
-                    <button
-                      type="button"
-                      className="cat-card__imageBtn"
-                      onClick={() => router.push(`/product/${product.id}?seller=${product.sellerId}`)}
-                      aria-label={`Ver ${product.name}`}
-                    >
-                      <img className="cat-card__img" src={product.image} alt={product.name} />
-                    </button>
+              <>
+                <div className="cat-products__grid" role="list" aria-label={`Productos de ${categoryName}`}>
+                  {products.map((product) => (
+                    <ProductItem
+                      key={`${product.sellerId}-${product.sku}`}
+                      product={product}
+                      sellerId={product.sellerId}
+                      sellerName={product.sellerName}
+                    />
+                  ))}
+                </div>
 
-                    <div className="cat-card__body">
-                      <button
-                        type="button"
-                        className="cat-card__name"
-                        onClick={() => router.push(`/product/${product.id}?seller=${product.sellerId}`)}
-                      >
-                        {product.name}
-                      </button>
+                <div ref={sentinelRef} style={{ height: 1 }} />
 
-                      <p className="cat-card__price">{formatPrice(product.price)}</p>
-
-                      <button
-                        className="cat-card__btn"
-                        type="button"
-                        onClick={() => addItem(product, product.sellerId, 1, product.sellerName)}
-                      >
-                        Agregar al carrito
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
+                {isFetchingNextPage ? <p className="cat-products__state">Cargando más…</p> : null}
+                {!hasNextPage && products.length > 0 ? (
+                  <p className="cat-products__state"></p>
+                ) : null}
+              </>
             )}
           </div>
         </section>

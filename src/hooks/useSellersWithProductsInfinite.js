@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import graphqlClient from '../lib/graphqlClient';
 import { SELLERS_WITH_PRODUCTS } from '../graphql/sellers/queries';
+import { normalizeSellersWithProductsResponse } from '../utils/mediaUrl';
 
 export function useSellersWithProductsInfinite({ pageSize = 20, productLimit = 6 } = {}) {
   return useInfiniteQuery({
@@ -12,7 +13,7 @@ export function useSellersWithProductsInfinite({ pageSize = 20, productLimit = 6
         productLimit,
         currentPage: pageParam,
       });
-      return data;
+      return normalizeSellersWithProductsResponse(data);
     },
     getNextPageParam: (lastPage) => {
       const info = lastPage?.sellersWithProducts?.page_info;

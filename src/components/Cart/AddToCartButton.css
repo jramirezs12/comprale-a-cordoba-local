@@ -1,0 +1,23 @@
+.addcart-btn {
+  position: relative;
+  transition: transform 0.15s ease, opacity 0.2s ease, background 0.2s ease;
+}
+
+.addcart-btn--added {
+  transform: translateY(-1px);
+}
+
+.addcart-btn--added .addcart-btn__text {
+  animation: addcart-pop 0.25s ease;
+}
+
+@keyframes addcart-pop {
+  0% { transform: scale(0.98); opacity: 0.85; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .addcart-btn--added .addcart-btn__text {
+    animation: none;
+  }
+}

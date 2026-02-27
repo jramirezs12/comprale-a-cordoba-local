@@ -9,34 +9,46 @@
   flex: 1;
 }
 
-/* ── Hero banner ── */
-.sdp-hero {
-  position: relative;
-  height: 55vh;
-  min-height: 340px;
-  max-height: 520px;
-
-  margin-top: 88px; /* offset for fixed navbar */
-  overflow: hidden;
-
-  background: #0b0b0c;
+/* ✅ make the whole page narrower like the design */
+.sdp-container {
+  width: min(980px, 100%);
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
-.sdp-hero--noimage {
-  background: radial-gradient(1200px 600px at 35% 20%, rgba(255, 255, 255, 0.08), transparent 55%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 40%),
-    #070707;
+/* ─────────────────────────────────────────────
+   Banner
+   ───────────────────────────────────────────── */
+.sdp-hero {
+  margin-top: 128px;
+  padding: 26px 0 0; /* container handles side padding */
+}
+
+.sdp-hero__frame {
+  height: 300px;
+  border-radius: 18px;
+  overflow: hidden;
+  position: relative;
+
+  background: #0b0b0c;
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.38);
 }
 
 .sdp-hero__image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
   display: block;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.01);
+}
 
-  /* helps perceived "resolution" / clarity */
-  transform: scale(1.03);
-  image-rendering: auto;
+.sdp-hero__fallback {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(1200px 600px at 35% 20%, rgba(255, 255, 255, 0.08), transparent 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 40%),
+    #070707;
 }
 
 .sdp-hero__overlay {
@@ -44,192 +56,107 @@
   inset: 0;
   background: linear-gradient(
     to top,
-    rgba(0, 0, 0, 0.86) 0%,
-    rgba(0, 0, 0, 0.45) 55%,
-    rgba(0, 0, 0, 0.20) 100%
+    rgba(0, 0, 0, 0.68) 0%,
+    rgba(0, 0, 0, 0.30) 55%,
+    rgba(0, 0, 0, 0.10) 100%
   );
-  display: flex;
-  align-items: flex-end;
 }
 
-.sdp-hero__inner {
-  width: min(1100px, 100%);
-  margin: 0 auto;
-  padding: 28px 20px 34px;
-  color: #fff;
-}
-
-.sdp-hero__head {
-  display: flex;
-  align-items: flex-end;
-  gap: 16px;
-}
-
-.sdp-hero__head--simple {
-  gap: 0;
-}
-
-.sdp-hero__text {
+.sdp-hero__title {
+  position: absolute;
+  inset: 0;
   display: grid;
-  gap: 10px;
-}
+  place-items: center;
 
-.sdp-hero__name {
-  font-size: clamp(1.7rem, 4vw, 2.6rem);
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.4px;
   margin: 0;
+  padding: 0 20px;
+
+  color: #ffffff;
+  text-align: center;
+
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+
+  font-size: clamp(34px, 4.2vw, 56px);
+  line-height: 1.05;
+  text-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
 }
 
-.sdp-hero__description {
-  font-size: 0.98rem;
-  color: rgba(255, 255, 255, 0.82);
-  line-height: 1.55;
-  max-width: 740px;
-  margin: 0;
-}
-
-/* ── Products section ── */
+/* ─────────────────────────────────────────────
+   Products grid (use SAME card as home: ProductItem)
+   ───────────────────────────────────────────── */
 .sdp-products {
-  padding: 36px 20px 70px;
+  padding: 22px 0 70px; /* container handles side padding */
 }
 
-.sdp-products__inner {
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
-.sdp-products__title {
-  font-size: clamp(1.25rem, 2.2vw, 1.6rem);
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.94);
-  margin: 0 0 22px;
-  letter-spacing: -0.3px;
-}
-
-/* Cards */
 .sdp-products__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+
+  /* ✅ grid columns (desktop 4, mobile 2) but using ProductItem which has fixed widths;
+     so we override sizing with an extra rule in ProductItem.css below */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
 }
 
-.sdp-card {
-  background: #ffffff;
-  border-radius: 14px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  min-height: 320px;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
-}
-
-.sdp-card__imageBtn {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  display: block;
-}
-
-.sdp-card__img {
-  width: 100%;
-  height: 178px;
-  object-fit: cover;
-  display: block;
-  background: #f1f1f1;
-}
-
-.sdp-card__body {
-  padding: 14px 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-}
-
-.sdp-card__name {
-  text-align: left;
-  border: none;
-  background: none;
-  padding: 0;
+/* state text */
+.sdp-products__state {
+  color: rgba(255, 255, 255, 0.78);
   margin: 0;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #1a1a2e;
-  line-height: 1.25;
+  padding: 18px 0;
 }
 
-.sdp-card__name:hover {
-  text-decoration: underline;
-}
-
-.sdp-card__price {
-  margin: 0;
-  color: #4a4a6a;
-  font-size: 0.9rem;
-}
-
-.sdp-card__btn {
-  margin-top: auto;
-  background: #1d1d1f;
-  color: #ffffff;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 12px;
-  cursor: pointer;
-  font-weight: 700;
-  transition: opacity 0.2s;
-}
-
-.sdp-card__btn:hover {
-  opacity: 0.88;
-}
-
-/* ── Not found state ── */
-.seller-detail-page--notfound main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  padding-top: 80px;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.seller-detail-page__back {
-  background: #e8363d;
-  color: #ffffff;
-  padding: 10px 24px;
-  border-radius: 50px;
-  font-weight: 700;
-  transition: background-color 0.2s;
-  border: none;
-  cursor: pointer;
-}
-
-.seller-detail-page__back:hover {
-  opacity: 0.9;
-}
-
-/* ── Responsive ── */
-@media (max-width: 768px) {
-  .sdp-hero {
-    margin-top: 120px;
-    min-height: 280px;
+/* Responsive */
+@media (max-width: 1024px) {
+  .sdp-container {
+    width: min(940px, 100%);
   }
 
   .sdp-products__grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sdp-hero__frame {
+    height: 260px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sdp-container {
+    padding: 0 16px;
+  }
+
+  .sdp-hero {
+    margin-top: 140px;
+    padding-top: 18px;
+  }
+
+  .sdp-hero__frame {
+    height: 240px;
+  }
+
+  .sdp-products__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
   }
 }
 
 @media (max-width: 480px) {
+  .sdp-container {
+    padding: 0 12px;
+  }
+
+  .sdp-hero {
+    margin-top: 132px;
+    padding-top: 14px;
+  }
+
+  .sdp-hero__frame {
+    height: 220px;
+    border-radius: 16px;
+  }
+
   .sdp-products__grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

@@ -9,9 +9,9 @@
   font-weight: 450;
   font-size: 42px;
   color: #ffffff;
-  margin-bottom: 32px;
-  margin-top: 0;
+  margin: 0 0 32px 0;
   letter-spacing: -0.02em;
+  text-align: center;
 }
 
 .how-it-works__title::after {
@@ -34,7 +34,6 @@
   gap: 6px;
 }
 
-/* Poppins Book (400) — número grande, ocupa las 2 líneas */
 .how-it-works__step-number {
   font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   font-weight: 400;
@@ -43,7 +42,6 @@
   line-height: 1;
   white-space: nowrap;
   flex-shrink: 0;
-  /* Alineación visual: bajar ligeramente para coincidir con la línea base del texto */
   margin-top: -4px;
 }
 
@@ -55,12 +53,11 @@
   padding-top: 2px;
 }
 
-/* Poppins Medium (500) — texto, exactamente 2 líneas */
 .how-it-works__step-line {
   font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   font-weight: 500;
   font-size: 15px;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255, 255, 255, 0.7);
   line-height: 1.4;
   margin: 0;
   white-space: normal;
@@ -76,28 +73,65 @@
   }
 }
 
+/* ✅ Mobile: force center relative to viewport (ignores parent offsets) */
 @media (max-width: 575px) {
   .how-it-works {
     padding: 40px 16px 32px 16px;
   }
 
   .how-it-works__title {
-    font-size: 32px;
-    margin-bottom: 24px;
+    font-size: 30px;
+    line-height: 1.15;
+    margin-bottom: 22px;
+    letter-spacing: -0.03em;
+
+    /* ✅ also hard-center title (in case parent is offset) */
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+    width: clamp(300px, 78vw, 420px);
+    max-width: clamp(300px, 78vw, 420px);
   }
 
   .how-it-works__steps {
     grid-template-columns: 1fr;
-    gap: 16px 0px;
-    max-width: 98vw;
+    gap: 18px 0;
+
+    /* ✅ hard center */
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+
+    width: clamp(300px, 78vw, 420px);
+    max-width: clamp(300px, 78vw, 420px);
+
+    margin: 0;
+    text-align: left;
+    justify-items: stretch;
+  }
+
+  .how-it-works__step {
+    gap: 14px;
   }
 
   .how-it-works__step-number {
-    font-size: 32px;
+    font-size: 44px;
+    line-height: 1;
+    width: 38px;
+    text-align: right;
     margin-top: -2px;
+
+    color: rgba(255, 255, 255, 0.55);
+    font-weight: 300;
+  }
+
+  .how-it-works__step-text {
+    padding-top: 6px;
   }
 
   .how-it-works__step-line {
     font-size: 14px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.72);
   }
 }

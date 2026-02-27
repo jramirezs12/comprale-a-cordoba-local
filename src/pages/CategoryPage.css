@@ -80,6 +80,7 @@
   padding: 18px 0;
 }
 
+/* ✅ grid stays, but cards now come from ProductItem (home) */
 .cat-products__grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -90,79 +91,6 @@
   .cat-products__grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-}
-
-.cat-card {
-  background: #ffffff;
-  border-radius: 14px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  min-height: 320px;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
-}
-
-.cat-card__imageBtn {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  display: block;
-}
-
-.cat-card__img {
-  width: 100%;
-  height: 178px;
-  object-fit: cover;
-  display: block;
-  background: #f1f1f1;
-}
-
-.cat-card__body {
-  padding: 14px 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-}
-
-.cat-card__name {
-  text-align: left;
-  border: none;
-  background: none;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #1a1a2e;
-  line-height: 1.25;
-}
-
-.cat-card__name:hover {
-  text-decoration: underline;
-}
-
-.cat-card__price {
-  margin: 0;
-  color: #4a4a6a;
-  font-size: 0.9rem;
-}
-
-.cat-card__btn {
-  margin-top: auto;
-  background: #1d1d1f;
-  color: #ffffff;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 12px;
-  cursor: pointer;
-  font-weight: 700;
-  transition: opacity 0.2s;
-}
-
-.cat-card__btn:hover {
-  opacity: 0.88;
 }
 
 @media (max-width: 768px) {
@@ -181,4 +109,15 @@
   .cat-products__grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* ✅ ensure ProductItem fills grid columns on category page */
+.cat-products__grid .product-item {
+  width: 100%;
+  flex: 1 1 auto;
+}
+
+.cat-products__grid .product-item--skeleton {
+  width: 100%;
+  flex: 1 1 auto;
 }

@@ -18,8 +18,18 @@ function getCardStepPx(trackEl) {
   return cardWidth + gap;
 }
 
+function getLimits(el) {
+  if (!el) return { canPrev: false, canNext: false };
+  const max = el.scrollWidth - el.clientWidth;
+  const left = el.scrollLeft;
+  return {
+    canPrev: left > 4,
+    canNext: left < max - 4,
+  };
+}
+
 const ProductScrollList = forwardRef(function ProductScrollList(
-  { products, sellerId, sellerName, loading = false, visibleCount = 3 },
+  { products, sellerId, sellerName, loading = false, visibleCount = 3, onLimitsChange },
   ref
 ) {
   const trackRef = useRef(null);
@@ -41,12 +51,22 @@ const ProductScrollList = forwardRef(function ProductScrollList(
     resumeTimerRef.current = window.setTimeout(() => setPaused(false), RESUME_AFTER_MS);
   }, []);
 
-  const scrollByStep = useCallback((dir, behavior = 'smooth') => {
+  const reportLimits = useCallback(() => {
     const el = trackRef.current;
-    if (!el) return;
-    const step = getCardStepPx(el);
-    el.scrollBy({ left: dir * step, behavior });
-  }, []);
+    const limits = getLimits(el);
+    onLimitsChange?.(limits);
+    return limits;
+  }, [onLimitsChange]);
+
+  const scrollByStep = useCallback(
+    (dir, behavior = 'smooth') => {
+      const el = trackRef.current;
+      if (!el) return;
+      const step = getCardStepPx(el);
+      el.scrollBy({ left: dir * step, behavior });
+    },
+    []
+  );
 
   const scrollNext = useCallback(() => scrollByStep(1), [scrollByStep]);
   const scrollPrev = useCallback(() => scrollByStep(-1), [scrollByStep]);
@@ -64,8 +84,9 @@ const ProductScrollList = forwardRef(function ProductScrollList(
         scrollPrev();
       },
       pause: () => pauseAuto(),
+      getLimits: () => reportLimits(),
     }),
-    [pauseAuto, scrollNext, scrollPrev]
+    [pauseAuto, scrollNext, scrollPrev, reportLimits]
   );
 
   // Auto-scroll
@@ -93,6 +114,13 @@ const ProductScrollList = forwardRef(function ProductScrollList(
     };
   }, []);
 
+  // Initial limits + update when products change
+  useEffect(() => {
+    // wait one paint so scrollWidth/clientWidth are correct
+    const raf = window.requestAnimationFrame(() => reportLimits());
+    return () => window.cancelAnimationFrame(raf);
+  }, [visible, reportLimits]);
+
   // Wheel: vertical wheel scrolls horizontally (mouse wheel)
   const handleWheel = (e) => {
     const el = trackRef.current;
@@ -106,6 +134,7 @@ const ProductScrollList = forwardRef(function ProductScrollList(
       e.preventDefault();
       el.scrollBy({ left: e.deltaY, behavior: 'auto' });
       pauseAuto();
+      reportLimits();
     }
   };
 
@@ -129,6 +158,7 @@ const ProductScrollList = forwardRef(function ProductScrollList(
 
     const walk = e.clientX - startXRef.current;
     el.scrollLeft = startScrollLeftRef.current - walk;
+    reportLimits();
   };
 
   const endDrag = () => {
@@ -136,6 +166,7 @@ const ProductScrollList = forwardRef(function ProductScrollList(
     if (!el) return;
     isDownRef.current = false;
     el.classList.remove('product-scroll__track--dragging');
+    reportLimits();
   };
 
   // Keyboard on focused track
@@ -154,12 +185,7 @@ const ProductScrollList = forwardRef(function ProductScrollList(
 
   if (loading && (!visible || visible.length === 0)) {
     return (
-      <div
-        ref={trackRef}
-        className="product-scroll__track"
-        role="list"
-        aria-label="Productos del negocio (cargando)"
-      >
+      <div ref={trackRef} className="product-scroll__track" role="list" aria-label="Productos del negocio (cargando)">
         {Array.from({ length: visibleCount }).map((_, i) => (
           <div key={i} className="product-item product-item--skeleton" aria-hidden="true" />
         ))}
@@ -176,14 +202,20 @@ const ProductScrollList = forwardRef(function ProductScrollList(
       tabIndex={0}
       onKeyDown={onKeyDown}
       onWheel={handleWheel}
-      onScroll={pauseAuto}
+      onScroll={() => {
+        pauseAuto();
+        reportLimits();
+      }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onPointerLeave={endDrag}
       onMouseEnter={pauseAuto}
-      onFocus={pauseAuto}
+      onFocus={() => {
+        pauseAuto();
+        reportLimits();
+      }}
     >
       {visible.map((product) => (
         <div className="product-scroll__item" key={product.id} role="listitem">

@@ -73,7 +73,7 @@ function Footer({ sponsors }) {
       {/* Copyright (centered) */}
       <div className="footer__container">
         <p className="footer__copyright">
-          © {new Date().getFullYear()} Cómprale a Córdoba · Todos los derechos reservados
+          © {new Date().getFullYear()} Cómprale a Córdoba · Todos los derechos reservados · Inter Rapidísimo
         </p>
       </div>
     </footer>

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import graphqlClient from '../lib/graphqlClient';
 import { SELLERS_WITH_PRODUCTS } from '../graphql/sellers/queries';
+import { normalizeSellersWithProductsResponse } from '../utils/mediaUrl';
 
 export function useSellerById({ sellerId } = {}) {
   const idNum = Number(sellerId);
@@ -14,11 +15,13 @@ export function useSellerById({ sellerId } = {}) {
       const productLimit = 1;
 
       for (let currentPage = 1; currentPage <= 10; currentPage += 1) {
-        const res = await graphqlClient.request(SELLERS_WITH_PRODUCTS, {
+        const resRaw = await graphqlClient.request(SELLERS_WITH_PRODUCTS, {
           pageSize,
           productLimit,
           currentPage,
         });
+
+        const res = normalizeSellersWithProductsResponse(resRaw);
 
         const items = res?.sellersWithProducts?.items || [];
         const match = items.find((it) => Number(it?.seller?.seller_id) === idNum);

@@ -3,7 +3,9 @@
 import { useEffect, useRef } from 'react';
 import './Hero.css';
 
-const VIDEO_URL = 'https://www.w3schools.com/howto/rain.mp4';
+// ✅ Put your .jpeg in /public and update this path.
+// Example: /public/hero-banner.jpeg  =>  src="/hero-banner.jpeg"
+const HERO_BANNER_URL = '/hero-banner.jpeg';
 
 function Hero({ nextSectionRef }) {
   const heroRef = useRef(null);
@@ -33,9 +35,16 @@ function Hero({ nextSectionRef }) {
 
   return (
     <section className="hero" ref={heroRef} id="hero">
-      <video className="hero__video" autoPlay loop muted playsInline aria-hidden="true">
-        <source src={VIDEO_URL} type="video/mp4" />
-      </video>
+      {/* ✅ Image banner (replaces video) */}
+      <img
+        className="hero__media"
+        src={HERO_BANNER_URL}
+        alt=""
+        aria-hidden="true"
+        loading="eager"
+        decoding="async"
+        fetchPriority="high"
+      />
 
       <div className="hero__overlay" />
 

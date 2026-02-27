@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ProductScrollList from './ProductScrollList';
 import { useProductsBySeller } from '../../hooks/useProductsBySeller';
@@ -62,6 +62,15 @@ function SellerCard({ seller, onViewDetail }) {
 
   const canScroll = products.length > 0;
 
+  // ✅ dynamic arrow disabling based on scroll position
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
+
+  const handleLimitsChange = useCallback(({ canPrev: p, canNext: n }) => {
+    setCanPrev(Boolean(p));
+    setCanNext(Boolean(n));
+  }, []);
+
   const handlePrev = () => {
     if (!canScroll) return;
     scrollRef.current?.prev?.();
@@ -79,7 +88,7 @@ function SellerCard({ seller, onViewDetail }) {
       <button
         className="seller-card__arrow seller-card__arrow--prev"
         onClick={handlePrev}
-        disabled={!canScroll}
+        disabled={!canScroll || !canPrev}
         aria-label="Productos anteriores"
         type="button"
       >
@@ -112,13 +121,14 @@ function SellerCard({ seller, onViewDetail }) {
           sellerName={sellerName}
           loading={qProducts.isLoading}
           visibleCount={3}
+          onLimitsChange={handleLimitsChange}
         />
       </div>
 
       <button
         className="seller-card__arrow seller-card__arrow--next"
         onClick={handleNext}
-        disabled={!canScroll}
+        disabled={!canScroll || !canNext}
         aria-label="Más productos"
         type="button"
       >

@@ -6,17 +6,11 @@ import { useCart } from '../../context/CartContext';
 import { useAllCities } from '../../hooks/useAllCities';
 import { useShippingQuote } from '../../hooks/useShippingQuote';
 import graphqlGuestClient from '../../lib/graphqlGuestClient';
-import {
-  CREATE_GUEST_CART,
-  ADD_PRODUCTS_TO_CART,
-  CREATE_CHECKOUT_PAYMENT,
-} from '../../graphql/checkout/mutations';
+import { CREATE_GUEST_CART, ADD_PRODUCTS_TO_CART, CREATE_CHECKOUT_PAYMENT } from '../../graphql/checkout/mutations';
 import Navbar from '../Navbar/Navbar';
+import TermsModal from './TermsModal';
+import { TERMS_AND_CONDITIONS_HTML } from '../../constants/termsAndConditions';
 import './Checkout.css';
-
-const DEFAULT_CARRIER_CODE = 'envios';
-const DEFAULT_METHOD_CODE = 'inter';
-const DEFAULT_PAYMENT_CODE = 'payzen_standard';
 
 const formatPrice = (price) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price || 0);
@@ -36,10 +30,14 @@ export default function CheckoutForm() {
   const { items, total, updateQuantity, clearCart } = useCart();
   const { data: citiesData } = useAllCities();
 
-  const cities = useMemo(() => citiesData?.allCities?.items || [], [citiesData]);
+  const cities = useMemo(() => {
+    const list = citiesData?.allCities?.items || [];
+    return [...list].sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || ''), 'es'));
+  }, [citiesData]);
 
   const [form, setForm] = useState({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     email: '',
     idType: 'C.C',
     idNumber: '',
@@ -53,19 +51,168 @@ export default function CheckoutForm() {
     acceptData: false,
   });
 
+  const [termsOpen, setTermsOpen] = useState(false);
+
+  // ✅ Mobile summary bottom-sheet
+  const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
+
+  // ✅ City picker: separate states for desktop vs mobile
+  const [cityDesktopOpen, setCityDesktopOpen] = useState(false);
+  const [cityMobileOpen, setCityMobileOpen] = useState(false);
+  const [cityQuery, setCityQuery] = useState('');
+
+  const cityDesktopPopoverRef = useRef(null);
+  const cityDesktopInputRef = useRef(null);
+
+  const cityMobileSheetRef = useRef(null);
+  const cityMobileInputRef = useRef(null);
+
+  const filteredCities = useMemo(() => {
+    const q = cityQuery.trim().toLowerCase();
+    if (!q) return cities;
+    return cities.filter((c) => String(c?.name || '').toLowerCase().includes(q));
+  }, [cities, cityQuery]);
+
+  // ✅ swipe handling (mobile)
+  const summaryRef = useRef(null);
+  const swipeStartYRef = useRef(null);
+  const swipeDeltaRef = useRef(0);
+
+  const animateSummaryTo = (open) => {
+    const el = summaryRef.current;
+    if (!el) {
+      setMobileSummaryOpen(open);
+      return;
+    }
+    el.classList.add('checkout__sheet-animating');
+    window.requestAnimationFrame(() => setMobileSummaryOpen(open));
+    window.setTimeout(() => el.classList.remove('checkout__sheet-animating'), 360);
+  };
+
+  const handleSummaryTouchStart = (e) => {
+    const y = e.touches?.[0]?.clientY;
+    if (typeof y !== 'number') return;
+    swipeStartYRef.current = y;
+    swipeDeltaRef.current = 0;
+  };
+
+  const handleSummaryTouchMove = (e) => {
+    const startY = swipeStartYRef.current;
+    const y = e.touches?.[0]?.clientY;
+    if (typeof startY !== 'number' || typeof y !== 'number') return;
+    swipeDeltaRef.current = y - startY;
+  };
+
+  const handleSummaryTouchEnd = () => {
+    const delta = swipeDeltaRef.current;
+    swipeStartYRef.current = null;
+    swipeDeltaRef.current = 0;
+
+    const THRESHOLD = 30;
+    if (delta < -THRESHOLD) animateSummaryTo(true);
+    if (delta > THRESHOLD) animateSummaryTo(false);
+  };
+
+  // ✅ Desktop: close city popover on outside click / ESC
+  useEffect(() => {
+    if (!cityDesktopOpen) return;
+
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setCityDesktopOpen(false);
+    };
+
+    const onPointerDown = (e) => {
+      const pop = cityDesktopPopoverRef.current;
+      if (!pop) return;
+      if (pop.contains(e.target)) return;
+      setCityDesktopOpen(false);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('pointerdown', onPointerDown);
+
+    const t = window.setTimeout(() => {
+      try {
+        cityDesktopInputRef.current?.focus?.({ preventScroll: true });
+      } catch {
+        cityDesktopInputRef.current?.focus?.();
+      }
+    }, 0);
+
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.clearTimeout(t);
+    };
+  }, [cityDesktopOpen]);
+
+  // ✅ Mobile: keep city modal ABOVE keyboard via VisualViewport -> sets CSS var --kb
+  useEffect(() => {
+    if (!cityMobileOpen) return;
+
+    const root = document.documentElement;
+
+    const updateKb = () => {
+      const vv = window.visualViewport;
+      if (!vv) {
+        root.style.setProperty('--kb', '0px');
+        return;
+      }
+
+      // difference between layout viewport and visual viewport + offsetTop
+      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      root.style.setProperty('--kb', `${kb}px`);
+    };
+
+    updateKb();
+
+    window.visualViewport?.addEventListener('resize', updateKb);
+    window.visualViewport?.addEventListener('scroll', updateKb);
+
+    const t = window.setTimeout(() => {
+      try {
+        cityMobileInputRef.current?.focus?.({ preventScroll: true });
+      } catch {
+        cityMobileInputRef.current?.focus?.();
+      }
+      // bring sheet into view for some Android browsers
+      cityMobileSheetRef.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' });
+    }, 120);
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', updateKb);
+      window.visualViewport?.removeEventListener('scroll', updateKb);
+      window.clearTimeout(t);
+      root.style.setProperty('--kb', '0px');
+    };
+  }, [cityMobileOpen]);
+
   const [errors, setErrors] = useState({});
   const [processing, setProcessing] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  // Cart used ONLY for shipping estimation (to avoid duplication issues)
+  const canSubmit = useMemo(() => {
+    if (processing) return false;
+    if (!items?.length) return false;
+    if (!form.firstName.trim()) return false;
+    if (!form.lastName.trim()) return false;
+    if (!form.email || !/\S+@\S+\.\S+/.test(form.email)) return false;
+    if (!form.idNumber.trim()) return false;
+    if (!form.phone.trim()) return false;
+    if (!form.cityId) return false;
+    if (!form.address.trim()) return false;
+    if (!form.regionId || !Number.isFinite(Number(form.regionId))) return false;
+    if (!form.acceptTerms) return false;
+    if (!form.acceptData) return false;
+    return true;
+  }, [processing, items, form]);
+
   const [estimateCartId, setEstimateCartId] = useState('');
   const [cartSyncing, setCartSyncing] = useState(false);
   const syncNonceRef = useRef(0);
 
-  // Build a signature so we can re-sync when items/qty change
   const cartSignature = useMemo(() => stableCartSignature(items), [items]);
 
-  // Keep estimate cart rebuilt when items change (safe without update/remove mutations)
   useEffect(() => {
     let cancelled = false;
 
@@ -75,8 +222,6 @@ export default function CheckoutForm() {
         return;
       }
 
-      // If user hasn't selected city/address yet, we still rebuild the cart so that
-      // once they select city/address the estimate can run instantly.
       setCartSyncing(true);
       const nonce = ++syncNonceRef.current;
 
@@ -85,7 +230,6 @@ export default function CheckoutForm() {
         const newCartId = cartData?.createGuestCart?.cart?.id;
         if (!newCartId) throw new Error('No se pudo crear el carrito para cotización.');
 
-        // Add items once to this fresh cart
         const cartItems = items.map((i) => ({
           parent_sku: i.product.parent_sku || null,
           sku: i.product.sku || i.product.id,
@@ -98,12 +242,10 @@ export default function CheckoutForm() {
         });
 
         const userErrors = addRes?.addProductsToCart?.user_errors || [];
-        if (userErrors.length) throw new Error(userErrors[0]?.message || 'Error agregando productos al carrito (cotización).');
+        if (userErrors.length)
+          throw new Error(userErrors[0]?.message || 'Error agregando productos al carrito (cotización).');
 
-        // Only apply if latest run
-        if (!cancelled && nonce === syncNonceRef.current) {
-          setEstimateCartId(newCartId);
-        }
+        if (!cancelled && nonce === syncNonceRef.current) setEstimateCartId(newCartId);
       } catch (e) {
         console.error('Estimate cart rebuild error:', e);
         if (!cancelled) setEstimateCartId('');
@@ -113,20 +255,17 @@ export default function CheckoutForm() {
     }
 
     rebuildEstimateCart();
-
     return () => {
       cancelled = true;
     };
   }, [cartSignature, items]);
 
-  // Estimator: runs when estimateCartId + city + address are present
   const { data: estimateData, isFetching: shippingLoading } = useShippingQuote({
     cartId: estimateCartId,
     city: form.cityName,
     street: form.address ? [form.address] : [],
   });
 
-  // RESPONSE IS ARRAY: estimateShippingMethods: [{ amount { value } }]
   const shippingCost = estimateData?.estimateShippingMethods?.[0]?.amount?.value ?? null;
   const grandTotal = total + (shippingCost || 0);
 
@@ -137,6 +276,28 @@ export default function CheckoutForm() {
       delete n[name];
       return n;
     });
+  };
+
+  const handleCitySelect = (city) => {
+    setForm((f) => ({
+      ...f,
+      cityId: String(city?.id || ''),
+      cityName: city?.name || '',
+      department: city?.region?.name || '',
+      regionId: city?.region?.id ? String(city.region.id) : '',
+    }));
+    clearFieldError('cityId');
+    setCityDesktopOpen(false);
+    setCityMobileOpen(false);
+    setCityQuery('');
+  };
+
+  const openCityPicker = () => {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
+      setCityMobileOpen(true);
+    } else {
+      setCityDesktopOpen(true);
+    }
   };
 
   const handleChange = (e) => {
@@ -163,7 +324,8 @@ export default function CheckoutForm() {
 
   const validate = () => {
     const errs = {};
-    if (!form.fullName.trim()) errs.fullName = 'Requerido';
+    if (!form.firstName.trim()) errs.firstName = 'Requerido';
+    if (!form.lastName.trim()) errs.lastName = 'Requerido';
     if (!form.email || !/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Email inválido';
     if (!form.idNumber.trim()) errs.idNumber = 'Requerido';
     if (!form.phone.trim()) errs.phone = 'Requerido';
@@ -187,12 +349,10 @@ export default function CheckoutForm() {
     setProcessing(true);
     setSubmitError('');
 
-    const nameParts = form.fullName.trim().split(/\s+/);
-    const firstname = nameParts[0] || form.fullName.trim();
-    const lastname = nameParts.slice(1).join(' ') || '';
+    const firstname = form.firstName.trim();
+    const lastname = form.lastName.trim();
 
     try {
-      // Checkout cart (separate from estimate cart)
       const cartData = await graphqlGuestClient.request(CREATE_GUEST_CART);
       const checkoutCartId = cartData?.createGuestCart?.cart?.id;
       if (!checkoutCartId) throw new Error('No se pudo crear el carrito invitado.');
@@ -207,8 +367,7 @@ export default function CheckoutForm() {
       const userErrors = addRes?.addProductsToCart?.user_errors || [];
       if (userErrors.length) throw new Error(userErrors[0]?.message || 'Error agregando productos al carrito.');
 
-
-        const regionIdInt = Number(form.regionId);
+      const regionIdInt = Number(form.regionId);
 
       const checkoutPaymentRes = await graphqlGuestClient.request(CREATE_CHECKOUT_PAYMENT, {
         cartId: checkoutCartId,
@@ -252,6 +411,67 @@ export default function CheckoutForm() {
   return (
     <div className="checkout">
       <Navbar />
+
+      <TermsModal open={termsOpen} html={TERMS_AND_CONDITIONS_HTML} onClose={() => setTermsOpen(false)} />
+
+      {/* ✅ Mobile city modal ONLY */}
+      {cityMobileOpen && (
+        <div className="checkout__cityModal" role="dialog" aria-modal="true" aria-label="Seleccionar ciudad">
+          <button
+            type="button"
+            className="checkout__cityBackdrop"
+            onClick={() => {
+              setCityMobileOpen(false);
+              setCityQuery('');
+            }}
+            aria-label="Cerrar"
+          />
+          <div className="checkout__citySheet" ref={cityMobileSheetRef}>
+            <div className="checkout__citySheetHead">
+              <p className="checkout__citySheetTitle">Ciudad</p>
+              <button
+                type="button"
+                className="checkout__cityClose"
+                onClick={() => {
+                  setCityMobileOpen(false);
+                  setCityQuery('');
+                }}
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+
+            <input
+              ref={cityMobileInputRef}
+              className="checkout__input checkout__citySearch"
+              type="search"
+              placeholder="Buscar ciudad…"
+              value={cityQuery}
+              onChange={(e) => setCityQuery(e.target.value)}
+              autoFocus
+            />
+
+            <div className="checkout__cityList" role="listbox" aria-label="Lista de ciudades">
+              {filteredCities.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className="checkout__cityOption"
+                  onClick={() => handleCitySelect(c)}
+                  role="option"
+                  aria-selected={String(form.cityId) === String(c.id)}
+                >
+                  <span>{c.name}</span>
+                  <span className="checkout__cityDept">{c?.region?.name || ''}</span>
+                </button>
+              ))}
+              {filteredCities.length === 0 ? <p className="checkout__cityEmpty">No encontramos esa ciudad.</p> : null}
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="checkout__main">
         {submitError && (
           <div className="checkout__submit-error" role="alert">
@@ -266,18 +486,34 @@ export default function CheckoutForm() {
               Datos de envío
             </h2>
 
-            <div className="checkout__field checkout__field--full">
-              <input
-                name="fullName"
-                type="text"
-                className={`checkout__input${errors.fullName ? ' checkout__input--error' : ''}`}
-                value={form.fullName}
-                onChange={handleChange}
-                placeholder="Nombre completo*"
-                aria-label="Nombre completo"
-                autoComplete="name"
-              />
-              {errors.fullName && <span className="checkout__error">{errors.fullName}</span>}
+            <div className="checkout__row checkout__row--names">
+              <div className="checkout__field">
+                <input
+                  name="firstName"
+                  type="text"
+                  className={`checkout__input${errors.firstName ? ' checkout__input--error' : ''}`}
+                  value={form.firstName}
+                  onChange={handleChange}
+                  placeholder="Nombre*"
+                  aria-label="Nombre"
+                  autoComplete="given-name"
+                />
+                {errors.firstName && <span className="checkout__error">{errors.firstName}</span>}
+              </div>
+
+              <div className="checkout__field">
+                <input
+                  name="lastName"
+                  type="text"
+                  className={`checkout__input${errors.lastName ? ' checkout__input--error' : ''}`}
+                  value={form.lastName}
+                  onChange={handleChange}
+                  placeholder="Apellidos*"
+                  aria-label="Apellidos"
+                  autoComplete="family-name"
+                />
+                {errors.lastName && <span className="checkout__error">{errors.lastName}</span>}
+              </div>
             </div>
 
             <div className="checkout__field checkout__field--full">
@@ -339,22 +575,52 @@ export default function CheckoutForm() {
               {errors.phone && <span className="checkout__error">{errors.phone}</span>}
             </div>
 
-            <div className="checkout__field checkout__field--full">
-              <select
-                name="cityId"
-                className={`checkout__input checkout__select${errors.cityId ? ' checkout__input--error' : ''}`}
-                value={form.cityId}
-                onChange={handleChange}
+            {/* ✅ City field with DESKTOP inline popover */}
+            <div className="checkout__field checkout__field--full checkout__cityField">
+              <button
+                type="button"
+                className={`checkout__input checkout__cityBtn${errors.cityId ? ' checkout__input--error' : ''}`}
+                onClick={openCityPicker}
                 aria-label="Ciudad"
+                aria-expanded={cityDesktopOpen || cityMobileOpen}
               >
-                <option value="">Ciudad</option>
-                {cities.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                <span className={form.cityName ? '' : 'checkout__cityPlaceholder'}>{form.cityName || 'Ciudad'}</span>
+                <span aria-hidden="true" className="checkout__cityChevron">
+                  ▾
+                </span>
+              </button>
+
               {errors.cityId && <span className="checkout__error">{errors.cityId}</span>}
+
+              {cityDesktopOpen && (
+                <div className="checkout__cityPopover" ref={cityDesktopPopoverRef} role="listbox" aria-label="Lista de ciudades">
+                  <input
+                    ref={cityDesktopInputRef}
+                    className="checkout__input checkout__citySearchInline"
+                    type="search"
+                    placeholder="Buscar ciudad…"
+                    value={cityQuery}
+                    onChange={(e) => setCityQuery(e.target.value)}
+                  />
+
+                  <div className="checkout__cityListInline">
+                    {filteredCities.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className="checkout__cityOption"
+                        onClick={() => handleCitySelect(c)}
+                        role="option"
+                        aria-selected={String(form.cityId) === String(c.id)}
+                      >
+                        <span>{c.name}</span>
+                        <span className="checkout__cityDept">{c?.region?.name || ''}</span>
+                      </button>
+                    ))}
+                    {filteredCities.length === 0 ? <p className="checkout__cityEmpty">No encontramos esa ciudad.</p> : null}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="checkout__field checkout__field--full">
@@ -387,9 +653,9 @@ export default function CheckoutForm() {
               <input type="checkbox" name="acceptTerms" checked={form.acceptTerms} onChange={handleChange} />
               <span>
                 Aceptar{' '}
-                <a href="#" className="checkout__link">
+                <button type="button" className="checkout__link checkout__link--btn" onClick={() => setTermsOpen(true)}>
                   Términos y Condiciones
-                </a>
+                </button>
               </span>
             </label>
             {errors.acceptTerms && <span className="checkout__error">{errors.acceptTerms}</span>}
@@ -411,81 +677,160 @@ export default function CheckoutForm() {
             </div>
           </section>
 
-          {/* Right */}
-          <section className="checkout__col checkout__col--summary" aria-labelledby="summary-title">
-            <h2 className="checkout__summary-title" id="summary-title">
-              Resumen de compra
-            </h2>
+          {/* Desktop summary */}
+          <section className="checkout__col checkout__col--summary checkout__summary-desktop" aria-label="Resumen de compra">
+            <h2 className="checkout__summary-title">Resumen de compra</h2>
 
-            <ul className="checkout__items" aria-label="Artículos en el carrito">
-              {items.map(({ product, quantity: qty }) => (
-                <li key={product.id} className="checkout__item">
-                  <img className="checkout__item-img" src={product.image} alt={product.name} />
-
-                  <div className="checkout__item-info">
-                    <p className="checkout__item-name">{product.name}</p>
-                    <div className="checkout__item-qty" role="group" aria-label={`Cantidad de ${product.name}`}>
-                      <button
-                        type="button"
-                        className="checkout__qty-btn"
-                        onClick={() => updateQuantity(product.id, qty - 1)}
-                        aria-label="Reducir"
-                      >
-                        −
-                      </button>
-                      <span aria-live="polite">{qty}</span>
-                      <button
-                        type="button"
-                        className="checkout__qty-btn"
-                        onClick={() => updateQuantity(product.id, qty + 1)}
-                        aria-label="Aumentar"
-                      >
-                        +
-                      </button>
+            <div className="checkout__summary-scroll">
+              <ul className="checkout__items" aria-label="Artículos en el carrito">
+                {items.map(({ product, quantity: qty }) => (
+                  <li key={product.id} className="checkout__item">
+                    <img className="checkout__item-img" src={product.image} alt={product.name} />
+                    <div className="checkout__item-info">
+                      <p className="checkout__item-name">{product.name}</p>
+                      <div className="checkout__item-qty" role="group" aria-label={`Cantidad de ${product.name}`}>
+                        <button type="button" className="checkout__qty-btn" onClick={() => updateQuantity(product.id, qty - 1)} aria-label="Reducir">
+                          −
+                        </button>
+                        <span aria-live="polite">{qty}</span>
+                        <button type="button" className="checkout__qty-btn" onClick={() => updateQuantity(product.id, qty + 1)} aria-label="Aumentar">
+                          +
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                    <p className="checkout__item-price">{formatPrice(product.price * qty)}</p>
+                  </li>
+                ))}
+              </ul>
 
-                  <p className="checkout__item-price">{formatPrice(product.price * qty)}</p>
-                </li>
-              ))}
-            </ul>
-
-            <a href="/" className="checkout__add-more">
-              + Agregar más productos
-            </a>
-
-            <hr className="checkout__divider" />
-
-            <div className="checkout__summary-spacer" />
-
-            <div className="checkout__summary">
-              <div className="checkout__summary-row">
-                <span>Costo de envío</span>
-                <span>
-                  {cartSyncing || shippingLoading
-                    ? '...'
-                    : shippingCost !== null
-                      ? formatPrice(shippingCost)
-                      : '$0'}
-                </span>
-              </div>
-
-              <div className="checkout__summary-row">
-                <span>Subtotal</span>
-                <span>{formatPrice(total)}</span>
-              </div>
+              <a href="/" className="checkout__add-more">
+                + Agregar más productos
+              </a>
             </div>
 
-            <hr className="checkout__divider" />
+            <div className="checkout__summary-bottom">
+              <hr className="checkout__divider" />
 
-            <div className="checkout__summary-row checkout__summary-row--total">
-              <span>Total</span>
-              <span>{formatPrice(grandTotal)}</span>
+              <div className="checkout__summary">
+                <div className="checkout__summary-row">
+                  <span>Costo de envío</span>
+                  <span>{cartSyncing || shippingLoading ? '...' : shippingCost !== null ? formatPrice(shippingCost) : '$0'}</span>
+                </div>
+
+                <div className="checkout__summary-row">
+                  <span>Subtotal</span>
+                  <span>{formatPrice(total)}</span>
+                </div>
+              </div>
+
+              <hr className="checkout__divider" />
+
+              <div className="checkout__summary-row checkout__summary-row--total">
+                <span>Total</span>
+                <span>{formatPrice(grandTotal)}</span>
+              </div>
+
+              <button
+                type="submit"
+                className="checkout__pay-btn"
+                disabled={!canSubmit}
+                aria-busy={processing}
+                aria-disabled={!canSubmit}
+                title={!canSubmit ? 'Completa todos los campos requeridos para continuar.' : undefined}
+              >
+                {processing ? 'Procesando…' : 'Pagar'}
+              </button>
             </div>
+          </section>
 
-            <button type="submit" className="checkout__pay-btn" disabled={processing} aria-busy={processing}>
-              {processing ? 'Procesando…' : 'Pagar'}
+          {/* Mobile bottom sheet summary */}
+          <section
+            ref={summaryRef}
+            className={`checkout__col checkout__col--summary checkout__summary-mobile${
+              mobileSummaryOpen ? ' checkout__col--summary-open' : ' checkout__col--summary-collapsed'
+            }`}
+            aria-labelledby="summary-title-mobile"
+            onTouchStart={handleSummaryTouchStart}
+            onTouchMove={handleSummaryTouchMove}
+            onTouchEnd={handleSummaryTouchEnd}
+          >
+            <button type="button" className="checkout__sheet-tapArea" onClick={() => animateSummaryTo(!mobileSummaryOpen)} aria-label="Abrir o cerrar resumen">
+              <div className="checkout__sheet-handle" aria-hidden="true" />
             </button>
+
+            <div className="checkout__summary-head">
+              <h2 className="checkout__summary-title" id="summary-title-mobile">
+                Resumen
+              </h2>
+
+              <button type="button" className="checkout__summary-toggle" onClick={() => animateSummaryTo(!mobileSummaryOpen)} aria-expanded={mobileSummaryOpen}>
+                {mobileSummaryOpen ? 'Ocultar detalle' : `Detalle (${items.length})`}
+                <svg className="checkout__summary-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+            </div>
+
+            <div className={`checkout__summary-collapsible${mobileSummaryOpen ? ' checkout__summary-collapsible--open' : ''}`}>
+              <ul className="checkout__items" aria-label="Artículos en el carrito">
+                {items.map(({ product, quantity: qty }) => (
+                  <li key={product.id} className="checkout__item">
+                    <img className="checkout__item-img" src={product.image} alt={product.name} />
+                    <div className="checkout__item-info">
+                      <p className="checkout__item-name">{product.name}</p>
+                      <div className="checkout__item-qty" role="group" aria-label={`Cantidad de ${product.name}`}>
+                        <button type="button" className="checkout__qty-btn" onClick={() => updateQuantity(product.id, qty - 1)} aria-label="Reducir">
+                          −
+                        </button>
+                        <span aria-live="polite">{qty}</span>
+                        <button type="button" className="checkout__qty-btn" onClick={() => updateQuantity(product.id, qty + 1)} aria-label="Aumentar">
+                          +
+                        </button>
+                      </div>
+                    </div>
+                    <p className="checkout__item-price">{formatPrice(product.price * qty)}</p>
+                  </li>
+                ))}
+              </ul>
+
+              <a href="/" className="checkout__add-more">
+                + Agregar más productos
+              </a>
+
+              <hr className="checkout__divider" />
+            </div>
+
+            <div className="checkout__summary-sticky">
+              <div className="checkout__summary">
+                <div className="checkout__summary-row">
+                  <span>Costo de envío</span>
+                  <span>{cartSyncing || shippingLoading ? '...' : shippingCost !== null ? formatPrice(shippingCost) : '$0'}</span>
+                </div>
+
+                <div className="checkout__summary-row">
+                  <span>Subtotal</span>
+                  <span>{formatPrice(total)}</span>
+                </div>
+              </div>
+
+              <hr className="checkout__divider" />
+
+              <div className="checkout__summary-row checkout__summary-row--total">
+                <span>Total</span>
+                <span>{formatPrice(grandTotal)}</span>
+              </div>
+
+              <button
+                type="submit"
+                className="checkout__pay-btn"
+                disabled={!canSubmit}
+                aria-busy={processing}
+                aria-disabled={!canSubmit}
+                title={!canSubmit ? 'Completa todos los campos requeridos para continuar.' : undefined}
+              >
+                {processing ? 'Procesando…' : 'Pagar'}
+              </button>
+            </div>
           </section>
         </form>
       </main>

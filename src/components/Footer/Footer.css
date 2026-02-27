@@ -6,11 +6,7 @@
 .footer__rule {
   height: 1px;
   width: 100%;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.footer__rule--bottom {
-  margin-top: 12px;
+  background: rgba(255, 255, 255, 0.10);
 }
 
 /* Centered container for organizer + copyright */
@@ -25,66 +21,74 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 14px 0;
+  gap: 18px;
+
+  /* ✅ much more breathing room like design */
+  padding: 84px 0 84px;
+
   text-align: center;
 }
 
 .footer__organizer-label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: rgba(239, 239, 239, 0.9);
+  font-size: 1.1rem;            /* ✅ bigger */
+  font-weight: 500;             /* ✅ less bold */
+  color: rgba(255, 255, 255, 0.88);
   white-space: nowrap;
+  letter-spacing: -0.01em;
 }
 
 .footer__organizer-logo {
-  height: 34px;
+  height: 40px; /* ✅ a bit bigger */
   width: auto;
   display: block;
+  filter: brightness(0) invert(1);
+  opacity: 0.98;
 }
 
 /* ── Logos row ── */
 .footer__row {
   width: 100%;
-  padding: 14px 0;
+
+  /* ✅ lots of vertical space like design */
+  padding: 74px 0 74px;
 }
 
-/* slightly wide but centered like design */
+/* full bleed but still aligned */
 .footer__row--bleed {
   padding-left: 24px;
   padding-right: 24px;
 }
 
-/*
-  ✅ Change from grid -> flex to center "Apoya:" WITH the logos,
-  so it sits immediately to the left of the first logo (Gobernación).
-*/
+/* Center label + logos in one line */
 .footer__row-inner {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 28px; /* ✅ more separation */
 }
 
 .footer__row-label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: rgba(239, 239, 239, 0.9);
+  font-size: 1.05rem;          /* ✅ bigger */
+  font-weight: 500;            /* ✅ lighter */
+  color: rgba(255, 255, 255, 0.86);
   white-space: nowrap;
   line-height: 1;
+  letter-spacing: -0.01em;
 }
 
 .footer__row-label--inline {
-  margin-left: 4px;
+  margin-left: 16px;
 }
 
-/* Logos container (centered as a group) */
+/* Logos container */
 .footer__row-logos {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+
+  gap: 34px;                   /* ✅ more space between logos */
   flex-wrap: wrap;
+
   overflow: visible;
   padding-bottom: 0;
 }
@@ -96,11 +100,11 @@
   opacity: 0.98;
 }
 
-/* smaller logos so everything fits */
+/* ✅ bigger logos like design */
 .footer__logo-img {
-  height: 28px;
+  height: 34px;
   width: auto;
-  max-width: 150px;
+  max-width: 180px;
   object-fit: contain;
   filter: brightness(0) invert(1);
   opacity: 0.95;
@@ -108,9 +112,9 @@
 
 /* Copyright */
 .footer__copyright {
-  margin: 10px 0 14px;
-  font-size: 0.8rem;
-  color: rgba(239, 239, 239, 0.55);
+  margin: 22px 0 40px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.55);
   text-align: center;
 }
 
@@ -129,19 +133,31 @@
   .footer__row-inner {
     flex-direction: column;
     justify-content: center;
-    gap: 10px;
+    gap: 18px;
+  }
+
+  .footer__organizer {
+    padding: 64px 0;
+  }
+
+  .footer__row {
+    padding: 54px 0;
   }
 
   .footer__organizer-logo {
-    height: 30px;
+    height: 34px;
   }
 
   .footer__logo-img {
-    height: 24px;
-    max-width: 130px;
+    height: 28px;
+    max-width: 160px;
   }
 
   .footer__row-label--inline {
     margin-left: 0;
+  }
+
+  .footer__copyright {
+    margin: 18px 0 32px;
   }
 }

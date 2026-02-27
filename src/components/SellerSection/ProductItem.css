@@ -24,10 +24,10 @@
 .product-item__image {
   width: 100%;
   height: 250px;
-  object-fit: contain;      /* key: no crop, no zoom */
-  object-position: center;  /* centered inside */
+  object-fit: contain; /* key: no crop, no zoom */
+  object-position: center; /* centered inside */
   display: block;
-  background: #ffffff;      /* clean background when there are borders */
+  background: #ffffff; /* clean background when there are borders */
 }
 
 .product-item__divider {
@@ -111,6 +111,18 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* ✅ GRID MODE OVERRIDES (Seller detail page): let cards fill grid columns */
+.sdp-products__grid .product-item {
+  width: 100%;
+  flex: 1 1 auto;
+}
+
+/* also let skeleton fill grid column if used inside */
+.sdp-products__grid .product-item--skeleton {
+  width: 100%;
+  flex: 1 1 auto;
+}
+
 /* Responsive */
 @media (max-width: 980px) {
   .product-item {
@@ -125,5 +137,57 @@
 
   .product-item__body {
     height: calc(300px - 200px - 1px);
+  }
+
+  /* ✅ keep grid behavior on seller page */
+  .sdp-products__grid .product-item {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+}
+
+/* ✅ Added feedback */
+.product-item--added {
+  box-shadow: 0 10px 28px rgba(34, 197, 94, 0.25), var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.product-item__add--added {
+  background: #22c55e;
+}
+
+.product-item__add--added:hover {
+  background: #16a34a;
+}
+
+.product-item__addedToast {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-family: var(--font-poppins);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #0b0b0c;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.product-item--added .product-item__addedToast {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-item--added {
+    transform: none;
+  }
+  .product-item__addedToast {
+    transition: none;
   }
 }

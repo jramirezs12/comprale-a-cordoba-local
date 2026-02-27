@@ -80,7 +80,21 @@ export default function HomePage() {
         <Hero nextSectionRef={howItWorksSectionRef} />
         <HowItWorks sectionRef={howItWorksSectionRef} />
 
-        <SellerSection sellers={sellers} onSellerClick={(seller) => router.push(`/seller/${seller.id}`)} />
+        {/* ✅ Home sellers section WITHOUT the "Los emprendedores" text */}
+        <section className="home-sellers" aria-label="Emprendedores destacados">
+          <SellerSection sellers={sellers} onSellerClick={(seller) => router.push(`/seller/${seller.id}`)} />
+
+          <div className="home-sellers__footer">
+            <button
+              type="button"
+              className="home-sellers__link"
+              onClick={() => router.push('/sellers')}
+              aria-label="Ver todos los emprendedores"
+            >
+              Ver todos
+            </button>
+          </div>
+        </section>
 
         <div ref={sentinelRef} className="home-infinite__sentinel" />
         <Stats stats={stats} />

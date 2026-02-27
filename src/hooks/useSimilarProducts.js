@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import graphqlClient from '../lib/graphqlClient';
 import { SELLERS_WITH_PRODUCTS } from '../graphql/sellers/queries';
+import { normalizeSellersWithProductsResponse, replaceMediaHost } from '../utils/mediaUrl';
 
 const PRODUCT_PLACEHOLDER = 'https://via.placeholder.com/200x200?text=Producto';
 const PAGE_SIZE = 20;
@@ -15,12 +16,12 @@ export function useSimilarProducts({ excludeProductId } = {}) {
     queryKey: ['similarProducts', excludeProductId],
     initialPageParam: 1,
     queryFn: async ({ pageParam = 1 }) => {
-      const data = await graphqlClient.request(SELLERS_WITH_PRODUCTS, {
+      const dataRaw = await graphqlClient.request(SELLERS_WITH_PRODUCTS, {
         pageSize: PAGE_SIZE,
         productLimit: PRODUCT_LIMIT,
         currentPage: pageParam,
       });
-      return data;
+      return normalizeSellersWithProductsResponse(dataRaw);
     },
     getNextPageParam: (lastPage) => {
       const info = lastPage?.sellersWithProducts?.page_info;
@@ -38,14 +39,15 @@ export function useSimilarProducts({ excludeProductId } = {}) {
           const productItems = Array.isArray(item?.products?.items) ? item.products.items : [];
           for (const p of productItems) {
             if (!p?.sku) continue;
-            if (!p?.name) continue; // skip products with missing names
+            if (!p?.name) continue;
             if (String(p.sku) === String(excludeProductId)) continue;
+
             allProducts.push({
               id: p.sku,
               sku: p.sku,
               name: p.name || '',
               price: p.price_range?.minimum_price?.final_price?.value ?? 0,
-              image: p.image?.url || PRODUCT_PLACEHOLDER,
+              image: replaceMediaHost(p.image?.url) || PRODUCT_PLACEHOLDER,
               sellerId: String(seller.seller_id),
               sellerName: seller.shop_title || seller.shop_url || '',
             });

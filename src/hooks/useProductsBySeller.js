@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import graphqlClient from '../lib/graphqlClient';
 import { PRODUCTS_BY_SELLER } from '../graphql/sellers/queries';
+import { normalizeProductsBySellerResponse } from '../utils/mediaUrl';
 
 export function useProductsBySeller({ sellerId, pageSize = 6, currentPage = 1, enabled = true } = {}) {
   return useQuery({
@@ -12,7 +13,7 @@ export function useProductsBySeller({ sellerId, pageSize = 6, currentPage = 1, e
         pageSize,
         currentPage,
       });
-      return data;
+      return normalizeProductsBySellerResponse(data);
     },
     retry: 1,
   });

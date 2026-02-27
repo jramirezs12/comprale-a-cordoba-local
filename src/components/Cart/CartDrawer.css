@@ -24,7 +24,12 @@
   left: auto;
   margin: 0;
 
+  /* ✅ iOS Safari: use dynamic viewport height + safe area */
   height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+
   width: 400px;
   max-width: 100vw;
 
@@ -45,6 +50,9 @@
 
   box-shadow: -4px 0 32px rgba(0, 0, 0, 0.5);
   font-family: var(--font-sans);
+
+  /* ✅ prevents content going under iPhone home indicator */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .cart-drawer--open {
@@ -96,15 +104,22 @@
   font-size: 1rem;
 }
 
+/* ✅ IMPORTANT: allow list to scroll, keep footer visible */
 .cart-drawer__items {
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+
   padding: 16px 24px;
   list-style: none;
   margin: 0;
+
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  /* ✅ extra space so last item isn't hidden behind sticky footer */
+  padding-bottom: calc(16px + 120px + env(safe-area-inset-bottom));
 }
 
 .cart-drawer__item {
@@ -203,10 +218,17 @@
   color: #e8363d;
 }
 
+/* ✅ Sticky footer so the pay button is always reachable on iPhone */
 .cart-drawer__footer {
-  padding: 16px 24px 24px;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+
+  padding: 16px 24px calc(24px + env(safe-area-inset-bottom));
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
+
+  background: #0a0a0a;
 }
 
 .cart-drawer__summary {

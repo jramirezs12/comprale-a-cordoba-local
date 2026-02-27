@@ -1,8 +1,69 @@
 .home-page {
   min-height: 100vh;
-  background-color: var(--color-primary);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
 }
 
 .home-page main {
   padding-top: 0;
+}
+
+/* Sellers block wrapper */
+.home-sellers {
+  background: var(--color-bg);
+
+  /* ✅ prevent extra vertical spacing from wrapper */
+  padding: 0;
+  margin: 0;
+}
+
+/* Footer link at the end of section (tight) */
+.home-sellers__footer {
+  max-width: 1245px;
+  margin: 0 auto;
+
+  /* ✅ much less space */
+  padding: 0 32px 16px;
+
+  display: flex;
+  justify-content: flex-end;
+
+  /* ✅ pull it closer to SellerSection bottom padding */
+  margin-top: -34px;
+}
+
+.home-sellers__link {
+  border: none;
+  background: transparent;
+  padding: 6px 0;
+
+  font-family: var(--font-poppins);
+  font-size: 0.95rem;
+  font-weight: 600;
+
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.home-sellers__link:hover {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.home-sellers__link:focus-visible {
+  outline: 2px solid rgba(232, 54, 61, 0.75);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+@media (max-width: 600px) {
+  .home-sellers__footer {
+    padding: 0 16px 12px;
+    margin-top: -30px;
+  }
 }

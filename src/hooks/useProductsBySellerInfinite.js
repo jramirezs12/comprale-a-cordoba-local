@@ -1,8 +1,9 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import graphqlClient from '../lib/graphqlClient';
 import { PRODUCTS_BY_SELLER } from '../graphql/sellers/queries';
+import { normalizeProductsBySellerResponse } from '../utils/mediaUrl';
 
-export function useProductsBySellerInfinite({ sellerId, pageSize = 12 } = {}) {
+export function useProductsBySellerInfinite({ sellerId, pageSize = 1000 } = {}) {
   const idNum = Number(sellerId);
   const enabled = Number.isFinite(idNum) && idNum > 0;
 
@@ -11,11 +12,12 @@ export function useProductsBySellerInfinite({ sellerId, pageSize = 12 } = {}) {
     enabled,
     initialPageParam: 1,
     queryFn: async ({ pageParam = 1 }) => {
-      return graphqlClient.request(PRODUCTS_BY_SELLER, {
+      const data = await graphqlClient.request(PRODUCTS_BY_SELLER, {
         sellerId: idNum,
         currentPage: pageParam,
         pageSize,
       });
+      return normalizeProductsBySellerResponse(data);
     },
     getNextPageParam: (lastPage) => {
       const info = lastPage?.productsBySeller?.page_info;

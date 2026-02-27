@@ -5,13 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useSellerById } from '../../../hooks/useSellerById';
 import { useProductsBySellerInfinite } from '../../../hooks/useProductsBySellerInfinite';
 import { useInfiniteScrollTrigger } from '../../../hooks/useInfiniteScrollTrigger';
-import { useCart } from '../../../context/CartContext';
 import Navbar from '../../../components/Navbar/Navbar';
 import Footer from '../../../components/Footer/Footer';
+import ProductItem from '../../../components/SellerSection/ProductItem';
 import '../../../pages/SellerDetailPage.css';
-
-const formatPrice = (price) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price || 0);
 
 function ensureHiRes(url) {
   if (!url) return '';
@@ -26,10 +23,8 @@ function ensureHiRes(url) {
 
 function SellerDetailContent({ id }) {
   const router = useRouter();
-  const { addItem } = useCart();
 
   const sellerIdNum = Number(id);
-
   const { data: seller, isLoading: sellerLoading, isError: sellerError } = useSellerById({ sellerId: sellerIdNum });
 
   const productsQ = useProductsBySellerInfinite({ sellerId: sellerIdNum, pageSize: 12 });
@@ -56,11 +51,9 @@ function SellerDetailContent({ id }) {
   }, [productsQ.data]);
 
   const sellerName = seller?.shop_title || 'Ayuda a Cordoba';
-  const sellerDescription = seller?.description || '';
   const bannerUrl = ensureHiRes(seller?.banner_pic || '');
 
   const loading = sellerLoading || productsQ.isLoading;
-
   const canLoadMore = !!productsQ.hasNextPage && !productsQ.isFetchingNextPage;
 
   const loadMore = useCallback(() => {
@@ -105,68 +98,41 @@ function SellerDetailContent({ id }) {
       <Navbar />
 
       <main className="sdp">
-        <header className={`sdp-hero${bannerUrl ? '' : ' sdp-hero--noimage'}`}>
-          {bannerUrl && <img className="sdp-hero__image" src={bannerUrl} alt={`Portada de ${sellerName}`} />}
+        <header className="sdp-hero" aria-label={`Portada de ${sellerName}`}>
+          <div className="sdp-container">
+            <div className="sdp-hero__frame">
+              {bannerUrl ? (
+                <img className="sdp-hero__image" src={bannerUrl} alt={`Portada de ${sellerName}`} />
+              ) : (
+                <div className="sdp-hero__fallback" aria-hidden="true" />
+              )}
 
-          <div className="sdp-hero__overlay">
-            <div className="sdp-hero__inner">
-              <div className="sdp-hero__head sdp-hero__head--simple">
-                <div className="sdp-hero__text">
-                  <h1 className="sdp-hero__name">{sellerName}</h1>
-                  {sellerDescription ? <p className="sdp-hero__description">{sellerDescription}</p> : null}
-                </div>
-              </div>
+              <div className="sdp-hero__overlay" aria-hidden="true" />
+              <h1 className="sdp-hero__title">{sellerName}</h1>
             </div>
           </div>
         </header>
 
-        <section className="sdp-products" aria-labelledby="sdp-products-title">
-          <div className="sdp-products__inner">
-            <h2 className="sdp-products__title" id="sdp-products-title">
-              Productos disponibles
-            </h2>
-
+        <section className="sdp-products" aria-label={`Productos de ${sellerName}`}>
+          <div className="sdp-container">
             {productsQ.isError ? (
               <p className="sdp-products__state">Error cargando productos.</p>
             ) : products.length === 0 ? (
               <p className="sdp-products__state">Este negocio no tiene productos.</p>
             ) : (
               <>
-                <div className="sdp-products__grid" role="list" aria-label={`Productos de ${sellerName}`}>
+                <div className="sdp-products__grid" role="list">
                   {products.map((product) => (
-                    <article className="sdp-card" key={product.id} role="listitem">
-                      <button
-                        type="button"
-                        className="sdp-card__imageBtn"
-                        onClick={() => router.push(`/product/${product.id}?seller=${id}`)}
-                        aria-label={`Ver ${product.name}`}
-                      >
-                        <img className="sdp-card__img" src={product.image} alt={product.name} />
-                      </button>
-
-                      <div className="sdp-card__body">
-                        <button
-                          type="button"
-                          className="sdp-card__name"
-                          onClick={() => router.push(`/product/${product.id}?seller=${id}`)}
-                        >
-                          {product.name}
-                        </button>
-
-                        <p className="sdp-card__price">{formatPrice(product.price)}</p>
-
-                        <button className="sdp-card__btn" type="button" onClick={() => addItem(product, id, 1, sellerName)}>
-                          Agregar al carrito
-                        </button>
-                      </div>
-                    </article>
+                    <ProductItem key={product.id} product={product} sellerId={id} sellerName={sellerName} />
                   ))}
                 </div>
 
                 <div ref={sentinelRef} style={{ height: 1 }} />
 
                 {productsQ.isFetchingNextPage ? <p className="sdp-products__state">Cargando más productos…</p> : null}
-                {!productsQ.hasNextPage && products.length > 0 ? <p className="sdp-products__state">Ya viste todos los productos.</p> : null}
+                {!productsQ.hasNextPage && products.length > 0 ? (
+                  <p className="sdp-products__state"></p>
+                ) : null}
               </>
             )}
           </div>
