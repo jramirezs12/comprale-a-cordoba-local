@@ -27,13 +27,13 @@ export default function ProductInfoPanel({ cleanDescription, stock, isOutOfStock
           <span className="pdp__total-amount" aria-live="polite">{formatPrice(totalPrice)}</span>
         </div>
       )}
-      <button className="pdp__btn pdp__btn--comprar" onClick={onBuyNow} type="button" disabled={isOutOfStock} style={isOutOfStock ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}>
+      <button className={`pdp__btn pdp__btn--comprar${isOutOfStock ? ' pdp__btn--disabled' : ''}`} onClick={onBuyNow} type="button" disabled={isOutOfStock}>
         {buyAdded ? 'Agregado ✓' : 'Comprar'}
       </button>
-      <button className="pdp__btn pdp__btn--mas" onClick={onSelectMore} type="button" disabled={isOutOfStock} style={isOutOfStock ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}>
+      <button className={`pdp__btn pdp__btn--mas${isOutOfStock ? ' pdp__btn--disabled' : ''}`} onClick={onSelectMore} type="button" disabled={isOutOfStock}>
         Seleccionar más productos
       </button>
-      {isOutOfStock && <p style={{ marginTop: 10, color: '#efefef', opacity: 0.8, fontSize: 13 }}>Producto sin stock disponible.</p>}
+      {isOutOfStock && <p className="pdp__stock-message">Producto sin stock disponible.</p>}
     </div>
   );
 }
