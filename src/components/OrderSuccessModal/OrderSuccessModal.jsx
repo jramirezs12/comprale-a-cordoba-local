@@ -1,18 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
 import { formatPrice } from '../../utils/format';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import './OrderSuccessModal.css';
 
 export default function OrderSuccessModal({ open, order, onClose }) {
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') onClose?.();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
+  useEscapeKey(open, onClose);
 
   if (!open) return null;
 
