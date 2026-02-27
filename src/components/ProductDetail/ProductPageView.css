@@ -1,0 +1,15 @@
+.pdp-page {
+  background: #1d1d1f;
+  min-height: 100vh;
+}
+
+.pdp-page__state-wrapper {
+  background: #1d1d1f;
+  min-height: 100vh;
+}
+
+.pdp-page__state-main {
+  padding: 120px 40px;
+  text-align: center;
+  color: #efefef;
+}
