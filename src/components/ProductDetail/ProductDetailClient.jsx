@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
 import { useCart } from '../../context/CartContext';
-import ProductItem from '../SellerSection/ProductItem';
 import { useSimilarProducts } from '../../hooks/useSimilarProducts';
 import { formatPrice } from '../../utils/format';
 import { decodeHtmlEntities, normalizeSpaces, stripHtmlDeep } from '../../utils/html';
 import { usePauseResume } from '../../hooks/usePauseResume';
 import { useAutoScroll } from '../../hooks/useAutoScroll';
+import ProductGallery from './ProductGallery';
+import ProductInfoPanel from './ProductInfoPanel';
+import SimilarProductsSection from './SimilarProductsSection';
 import './ProductDetail.css';
 
 function clampQty(qty, stock) {
@@ -25,7 +27,6 @@ export default function ProductDetailClient({ product, sellerId }) {
 
   const stock = typeof product.stock === 'number' ? product.stock : null;
   const isOutOfStock = stock === 0;
-
   const [quantity, setQuantity] = useState(() => clampQty(1, stock));
 
   useEffect(() => {
@@ -35,9 +36,7 @@ export default function ProductDetailClient({ product, sellerId }) {
 
   const router = useRouter();
   const { addItem } = useCart();
-
   const sellerName = '';
-
   const unitPrice = Number(product.price) || 0;
   const totalPrice = useMemo(() => unitPrice * (Number(quantity) || 1), [unitPrice, quantity]);
 
@@ -50,11 +49,9 @@ export default function ProductDetailClient({ product, sellerId }) {
 
   const { data: similarData, fetchNextPage, hasNextPage, isFetchingNextPage, isFetching: similarLoading } =
     useSimilarProducts({ excludeProductId: product.id });
-
   const similarItems = useMemo(() => similarData?.products || [], [similarData]);
 
   const similarScrollRef = useRef(null);
-
   const { paused, pauseAuto } = usePauseResume(2500);
 
   const getStepPx = useCallback(() => {
@@ -67,17 +64,13 @@ export default function ProductDetailClient({ product, sellerId }) {
     return cardW + gap;
   }, []);
 
-  const scrollByStep = useCallback(
-    (dir) => {
-      const el = similarScrollRef.current;
-      if (!el) return;
-      pauseAuto();
-      el.scrollBy({ left: dir * getStepPx(), behavior: 'smooth' });
-    },
-    [getStepPx, pauseAuto]
-  );
+  const scrollByStep = useCallback((dir) => {
+    const el = similarScrollRef.current;
+    if (!el) return;
+    pauseAuto();
+    el.scrollBy({ left: dir * getStepPx(), behavior: 'smooth' });
+  }, [getStepPx, pauseAuto]);
 
-  // ✅ Arrow enable/disable based on scroll position
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
 
@@ -85,15 +78,11 @@ export default function ProductDetailClient({ product, sellerId }) {
     const el = similarScrollRef.current;
     if (!el) return;
     const max = el.scrollWidth - el.clientWidth;
-    const left = el.scrollLeft;
-
-    setCanPrev(left > 4);
-    setCanNext(left < max - 4);
+    setCanPrev(el.scrollLeft > 4);
+    setCanNext(el.scrollLeft < max - 4);
   }, []);
 
-  useEffect(() => {
-    updateArrowState();
-  }, [similarItems, updateArrowState]);
+  useEffect(() => { updateArrowState(); }, [similarItems, updateArrowState]);
 
   useEffect(() => {
     const el = similarScrollRef.current;
@@ -101,50 +90,28 @@ export default function ProductDetailClient({ product, sellerId }) {
     const onScroll = () => {
       pauseAuto();
       updateArrowState();
-
-      // keep infinite pagination trigger
       if (!hasNextPage || isFetchingNextPage) return;
-      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 120) {
-        fetchNextPage();
-      }
+      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 120) fetchNextPage();
     };
-
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, pauseAuto, updateArrowState]);
 
   useAutoScroll({ trackRef: similarScrollRef, items: similarItems, paused, getStepPx, intervalMs: 3500 });
 
-  // Keyboard when focused
   const handleSimilarKeyDown = (e) => {
-    if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      scrollByStep(1);
-    }
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      scrollByStep(-1);
-    }
+    if (e.key === 'ArrowRight') { e.preventDefault(); scrollByStep(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); scrollByStep(-1); }
   };
 
-  // ✅ only for "Comprar"
   const [buyAdded, setBuyAdded] = useState(false);
 
   const handleBuyNow = async () => {
     if (typeof stock === 'number' && stock <= 0) return;
-    const safeQty = clampQty(quantity, stock);
-
-    addItem(product, sellerId, safeQty, sellerName);
-
+    addItem(product, sellerId, clampQty(quantity, stock), sellerName);
     setBuyAdded(true);
     await new Promise((r) => setTimeout(r, 250));
-
     router.push('/checkout');
-  };
-
-  // ✅ does NOT add to cart, no "Agregado"
-  const handleSelectMore = () => {
-    router.push('/');
   };
 
   const decDisabled = quantity <= 1;
@@ -153,178 +120,50 @@ export default function ProductDetailClient({ product, sellerId }) {
   return (
     <div className="pdp">
       <Navbar />
-
       <main className="pdp__main">
         <div className="pdp__container">
           <div className="pdp__title-row">
             <h1 className="pdp__title">{product.name}</h1>
-
             <div className="pdp__price-col" aria-label="Precio unitario del producto">
               <span className="pdp__price-display">{formatPrice(unitPrice)}</span>
             </div>
           </div>
 
           <div className="pdp__content-row">
-            <div className="pdp__image-section">
-              {gallery.length > 1 && (
-                <div className="pdp__thumbnails" role="group" aria-label="Galería de imágenes del producto">
-                  {gallery.map((src, i) => (
-                    <button
-                      key={i}
-                      className={`pdp__thumb-btn${activeImg === i ? ' pdp__thumb-btn--active' : ''}`}
-                      onClick={() => setActiveImg(i)}
-                      aria-label={`Ver imagen ${i + 1} de ${gallery.length}`}
-                      aria-pressed={activeImg === i}
-                      type="button"
-                    >
-                      <img src={src} alt="" className="pdp__thumb-img" aria-hidden="true" />
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <div className="pdp__image-card">
-                <img className="pdp__main-image" src={gallery[activeImg]} alt={product.name} />
-              </div>
-            </div>
-
-            <div className="pdp__info-panel">
-              <div className="pdp__desc-section">
-                <p className="pdp__desc-label">Descripción</p>
-                <p className="pdp__desc-text">{cleanDescription}</p>
-              </div>
-
-              <div className="pdp__stock-row">
-                <span className="pdp__stock-label">Unidades disponibles</span>
-                <span className="pdp__stock-value">{stock != null ? stock : '—'}</span>
-              </div>
-
-              <div className="pdp__qty-row">
-                <span className="pdp__qty-label">Cantidad</span>
-                <div className="pdp__qty-ctrl" role="group" aria-label="Control de cantidad">
-                  <button
-                    className="pdp__qty-btn"
-                    onClick={() => setQuantity((q) => clampQty(q - 1, stock))}
-                    aria-label="Reducir cantidad"
-                    type="button"
-                    disabled={decDisabled || isOutOfStock}
-                  >
-                    −
-                  </button>
-                  <span className="pdp__qty-num" aria-live="polite">
-                    {quantity}
-                  </span>
-                  <button
-                    className="pdp__qty-btn"
-                    onClick={() => setQuantity((q) => clampQty(q + 1, stock))}
-                    aria-label="Aumentar cantidad"
-                    type="button"
-                    disabled={incDisabled || isOutOfStock}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              <hr className="pdp__divider" />
-
-              {quantity > 1 && (
-                <div className="pdp__total-row" aria-label="Total según cantidad">
-                  <span className="pdp__total-text">Total</span>
-                  <span className="pdp__total-amount" aria-live="polite">
-                    {formatPrice(totalPrice)}
-                  </span>
-                </div>
-              )}
-
-              <button
-                className="pdp__btn pdp__btn--comprar"
-                onClick={handleBuyNow}
-                type="button"
-                disabled={isOutOfStock}
-                style={isOutOfStock ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
-              >
-                {buyAdded ? 'Agregado ✓' : 'Comprar'}
-              </button>
-
-              <button
-                className="pdp__btn pdp__btn--mas"
-                onClick={handleSelectMore}
-                type="button"
-                disabled={isOutOfStock}
-                style={isOutOfStock ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
-              >
-                Seleccionar más productos
-              </button>
-
-              {isOutOfStock && (
-                <p style={{ marginTop: 10, color: '#efefef', opacity: 0.8, fontSize: 13 }}>
-                  Producto sin stock disponible.
-                </p>
-              )}
-            </div>
+            <ProductGallery gallery={gallery} activeImg={activeImg} onSelectImage={setActiveImg} productName={product.name} />
+            <ProductInfoPanel
+              cleanDescription={cleanDescription}
+              stock={stock}
+              isOutOfStock={isOutOfStock}
+              quantity={quantity}
+              decDisabled={decDisabled}
+              incDisabled={incDisabled}
+              totalPrice={totalPrice}
+              onDecrement={() => setQuantity((q) => clampQty(q - 1, stock))}
+              onIncrement={() => setQuantity((q) => clampQty(q + 1, stock))}
+              onBuyNow={handleBuyNow}
+              onSelectMore={() => router.push('/')}
+              buyAdded={buyAdded}
+            />
           </div>
 
-          {(similarItems.length > 0 || similarLoading) && (
-            <section className="pdp__similar" aria-label="Artículos similares">
-              <div className="pdp__similar-head">
-                <h2 className="pdp__similar-title">Artículos similares</h2>
-
-                <div className="pdp__similar-arrows" aria-hidden="false">
-                  <button
-                    type="button"
-                    className="pdp__similar-arrow"
-                    onClick={() => scrollByStep(-1)}
-                    disabled={!canPrev}
-                    aria-label="Anteriores"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6">
-                      <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    className="pdp__similar-arrow"
-                    onClick={() => scrollByStep(1)}
-                    disabled={!canNext}
-                    aria-label="Siguientes"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <div
-                className="pdp__similar-scroll"
-                ref={similarScrollRef}
-                role="list"
-                aria-label="Productos similares"
-                tabIndex={0}
-                onKeyDown={handleSimilarKeyDown}
-                onMouseEnter={pauseAuto}
-                onFocus={pauseAuto}
-              >
-                {similarItems.map(({ id, sku, name, price, image, sellerId: sid, sellerName: sname }) => (
-                  <ProductItem key={`${sid}-${id}`} product={{ id, sku, name, price, image }} sellerId={sid} sellerName={sname} />
-                ))}
-                {(similarLoading || isFetchingNextPage) &&
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <div key={`skel-${i}`} className="product-item product-item--skeleton" aria-hidden="true" />
-                  ))}
-              </div>
-
-              {hasNextPage && !isFetchingNextPage && (
-                <button className="pdp__similar-more" onClick={() => fetchNextPage()} type="button">
-                  Ver más
-                </button>
-              )}
-            </section>
-          )}
+          <SimilarProductsSection
+            similarItems={similarItems}
+            similarLoading={similarLoading}
+            isFetchingNextPage={isFetchingNextPage}
+            hasNextPage={hasNextPage}
+            canPrev={canPrev}
+            canNext={canNext}
+            onScrollPrev={() => scrollByStep(-1)}
+            onScrollNext={() => scrollByStep(1)}
+            onFetchNext={() => fetchNextPage()}
+            scrollRef={similarScrollRef}
+            handleKeyDown={handleSimilarKeyDown}
+            onMouseEnter={pauseAuto}
+            onFocus={pauseAuto}
+          />
         </div>
       </main>
-
       <Footer sponsors={[]} />
     </div>
   );
