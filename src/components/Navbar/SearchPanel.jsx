@@ -2,10 +2,8 @@
 
 import { useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { formatPrice } from '../../utils/format';
 import './SearchPanel.css';
-
-const formatPrice = (price) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price || 0);
 
 export default function SearchPanel({ open, anchorTop = 84, query, results, loading, onClose, onSelect }) {
   const list = useMemo(() => (Array.isArray(results) ? results : []), [results]);

@@ -8,11 +8,8 @@ import MenuDropdown from './MenuDropdown';
 import TrackingModal from '../TrackingModal/TrackingModal';
 import SearchPanel from './SearchPanel';
 import { useProductSearch } from '../../hooks/useProductSearch';
+import { encodePathSegment } from '../../utils/url';
 import './Navbar.css';
-
-function encodePathSegment(value) {
-  return encodeURIComponent(String(value ?? ''));
-}
 
 function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');

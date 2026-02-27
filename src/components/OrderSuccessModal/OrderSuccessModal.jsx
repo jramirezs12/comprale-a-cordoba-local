@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
+import { formatPrice } from '../../utils/format';
 import './OrderSuccessModal.css';
-
-const formatPrice = (price) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price || 0);
 
 export default function OrderSuccessModal({ open, order, onClose }) {
   useEffect(() => {

@@ -6,13 +6,11 @@ import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
 import { useSellersWithProductsInfinite } from '../../hooks/useSellersWithProductsInfinite';
 import { useInfiniteScrollTrigger } from '../../hooks/useInfiniteScrollTrigger';
+import { stripHtml } from '../../utils/html';
+import SellerTile from '../../components/Sellers/SellerTile';
 import './sellers.css';
 
 const SELLER_PLACEHOLDER = 'https://via.placeholder.com/900x900?text=Negocio';
-
-function stripHtml(html) {
-  return (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-}
 
 function mapSellers(items) {
   return (items || []).map((item) => {
@@ -24,25 +22,6 @@ function mapSellers(items) {
       description: stripHtml(s.description),
     };
   });
-}
-
-function SellerTile({ seller, onBuy }) {
-  const name = seller?.name || 'Negocio';
-  const image = seller?.image || SELLER_PLACEHOLDER;
-
-  return (
-    <article className="sellers-tile" aria-label={`Negocio ${name}`}>
-      <button className="sellers-tile__media" onClick={onBuy} type="button" aria-label={`Ver ${name}`}>
-        <img className="sellers-tile__img" src={image} alt={`Portada de ${name}`} loading="lazy" />
-        <div className="sellers-tile__shade" />
-        <h3 className="sellers-tile__name">{name}</h3>
-      </button>
-
-      <button className="sellers-tile__btn" type="button" onClick={onBuy} aria-label={`Comprar en ${name}`}>
-        Comprar
-      </button>
-    </article>
-  );
 }
 
 export default function SellersPage() {

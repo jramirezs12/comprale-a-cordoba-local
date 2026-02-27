@@ -10,10 +10,8 @@ import { CREATE_GUEST_CART, ADD_PRODUCTS_TO_CART, CREATE_CHECKOUT_PAYMENT } from
 import Navbar from '../Navbar/Navbar';
 import TermsModal from './TermsModal';
 import { TERMS_AND_CONDITIONS_HTML } from '../../constants/termsAndConditions';
+import { formatPrice } from '../../utils/format';
 import './Checkout.css';
-
-const formatPrice = (price) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(price || 0);
 
 const ID_TYPES = ['C.C', 'C.E', 'Pasaporte', 'NIT'];
 const PAYMENT_METHODS = ['Nequi', 'VISA', 'Mastercard', 'G Pay', 'Pay'];
