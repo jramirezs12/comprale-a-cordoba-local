@@ -1,6 +1,6 @@
 'use client';
 
-export default function ProductGallery({ gallery, activeImg, onSelectImage }) {
+export default function ProductGallery({ gallery, activeImg, onSelectImage, productName }) {
   return (
     <div className="pdp__image-section">
       {gallery.length > 1 && (
@@ -13,7 +13,7 @@ export default function ProductGallery({ gallery, activeImg, onSelectImage }) {
         </div>
       )}
       <div className="pdp__image-card">
-        <img className="pdp__main-image" src={gallery[activeImg]} alt="Producto" />
+        <img className="pdp__main-image" src={gallery[activeImg]} alt={productName || 'Producto'} />
       </div>
     </div>
   );

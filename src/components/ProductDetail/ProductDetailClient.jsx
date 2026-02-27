@@ -130,7 +130,7 @@ export default function ProductDetailClient({ product, sellerId }) {
           </div>
 
           <div className="pdp__content-row">
-            <ProductGallery gallery={gallery} activeImg={activeImg} onSelectImage={setActiveImg} />
+            <ProductGallery gallery={gallery} activeImg={activeImg} onSelectImage={setActiveImg} productName={product.name} />
             <ProductInfoPanel
               cleanDescription={cleanDescription}
               stock={stock}
